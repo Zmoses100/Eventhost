@@ -43,7 +43,7 @@ const ShareDialog = ({ event }) => {
                 </div>
                 <div className="flex justify-center gap-4 pt-4">
                     <Button onClick={() => share('twitter')} variant="outline" size="icon" className="h-14 w-14 rounded-full bg-white/10 text-white border-white/20 hover:bg-white/20"><Twitter className="h-6 w-6" /></Button>
-                    <Button onClick={() => share('facebook')} variant="outline" size="icon" className="h-14 w-14 rounded-full bg-white/10 text--white border-white/20 hover:bg-white/20"><Facebook className="h-6 w-6" /></Button>
+                    <Button onClick={() => share('facebook')} variant="outline" size="icon" className="h-14 w-14 rounded-full bg-white/10 text-white border-white/20 hover:bg-white/20"><Facebook className="h-6 w-6" /></Button>
                     <Button onClick={() => share('linkedin')} variant="outline" size="icon" className="h-14 w-14 rounded-full bg-white/10 text-white border-white/20 hover:bg-white/20"><Linkedin className="h-6 w-6" /></Button>
                 </div>
             </div>

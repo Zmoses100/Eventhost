@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient as legacyBackendClient } from '@/lib/customSupabaseClient';
 
-export const backendClient = supabase;
+export const backendClient = legacyBackendClient;
 
 export default backendClient;

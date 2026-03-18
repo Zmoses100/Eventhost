@@ -122,24 +122,26 @@ Migrate schema to PostgreSQL/MySQL manually:
 Seed data:
 - First sign-up call seeds `users` + `profiles` automatically.
 
-## 7) Hostinger VPS Deployment Guide
+## 7) Server Deployment Checklist (Any VPS/PaaS)
 
-1. Install Node.js LTS and npm on VPS.
-2. Upload project and install dependencies:
-   ```bash
-   npm install
-   ```
-3. Configure `.env` and `server/.env`.
-4. Build frontend:
-   ```bash
-   npm run build
-   ```
-5. Run backend with PM2:
-   ```bash
-   pm2 start npm --name eventhost-api -- run start:api
-   ```
-6. Serve frontend `dist/` via Nginx and reverse-proxy `/api` + `/uploads` to backend port 4000.
-7. Enable HTTPS and set strict firewall rules.
+- [ ] Use Node.js **20.19.1** (see `.nvmrc`) or a compatible Node 20 LTS runtime.
+- [ ] Install dependencies:
+  ```bash
+  npm install
+  ```
+- [ ] Configure frontend `.env` and backend `server/.env` for your domain and secrets.
+- [ ] Build frontend assets:
+  ```bash
+  npm run build
+  ```
+- [ ] Start backend API in production:
+  ```bash
+  npm run start:api
+  ```
+- [ ] Run backend with a process manager (PM2/systemd/container restart policy).
+- [ ] Serve `dist/` as static files (Nginx/Apache/CDN/object storage).
+- [ ] Reverse proxy `/api` and `/uploads` to the backend port.
+- [ ] Enable HTTPS and firewall rules for production.
 
 ## 8) Bugs Fixed List
 
@@ -159,7 +161,7 @@ Seed data:
 - [ ] File uploads (profile/event/sponsor/recording)
 - [ ] Messaging and virtual event interactions
 - [ ] Notifications and communications
-- [ ] Production deployment smoke test on Hostinger VPS
+- [ ] Production deployment smoke test on target server
 
 ## 10) Troubleshooting
 

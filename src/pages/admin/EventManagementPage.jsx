@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { ArrowLeft, Search, CheckCircle, XCircle, Star, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 
@@ -56,7 +56,7 @@ const AdminEventManagementPage = () => {
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await backendClient
       .from('events')
       .select(`
         *,
@@ -82,7 +82,7 @@ const AdminEventManagementPage = () => {
   }, [fetchEvents]);
 
   const handleEventStatusChange = async (eventId, status) => {
-    const { error } = await supabase
+    const { error } = await backendClient
       .from('events')
       .update({ status })
       .eq('id', eventId);
@@ -103,7 +103,7 @@ const AdminEventManagementPage = () => {
   };
 
   const toggleFeature = async (event) => {
-    const { error } = await supabase
+    const { error } = await backendClient
       .from('events')
       .update({ isFeatured: !event.isFeatured })
       .eq('id', event.id);

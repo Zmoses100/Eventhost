@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 
 export const useEventChat = (eventId, userProfile) => {
   const [messages, setMessages] = useState([]);
@@ -8,7 +8,7 @@ export const useEventChat = (eventId, userProfile) => {
   useEffect(() => {
     if (!eventId || !userProfile) return;
 
-    const channel = supabase.channel(`event-chat-${eventId}`, {
+    const channel = backendClient.channel(`event-chat-${eventId}`, {
       config: {
         broadcast: {
           self: true,
@@ -30,7 +30,7 @@ export const useEventChat = (eventId, userProfile) => {
 
     return () => {
       if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
+        backendClient.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };

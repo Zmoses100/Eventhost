@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { useAuth } from '@/context/SupabaseAuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ const NotificationsPage = () => {
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await backendClient
       .from('notifications')
       .select('*')
       .eq('user_id', user.id)
@@ -39,7 +39,7 @@ const NotificationsPage = () => {
 
   const handleNotificationClick = async (notification) => {
     if (!notification.is_read) {
-      const { error } = await supabase
+      const { error } = await backendClient
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notification.id);
@@ -57,7 +57,7 @@ const NotificationsPage = () => {
     const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
     if (unreadIds.length === 0) return;
 
-    const { error } = await supabase
+    const { error } = await backendClient
       .from('notifications')
       .update({ is_read: true })
       .in('id', unreadIds);

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { X, Send } from 'lucide-react';
 
 const InviteSpeakerDialog = ({ onInviteSpeaker, onOpenChange }) => {
@@ -15,7 +15,7 @@ const InviteSpeakerDialog = ({ onInviteSpeaker, onOpenChange }) => {
         toast({ title: "Email required", description: "Please enter the speaker's email.", variant: "destructive" });
         return;
       }
-      const { data: userToInvite, error } = await supabase
+      const { data: userToInvite, error } = await backendClient
         .from('profiles')
         .select('id, name')
         .eq('email', email)

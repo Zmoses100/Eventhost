@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, User, Loader2, PlayCircle } from 'lucide-react';
 import { useAuth } from '@/context/SupabaseAuthContext';
 import { Helmet } from 'react-helmet';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { toast } from '@/components/ui/use-toast';
 
 const SpeakerDashboardPage = () => {
@@ -20,7 +20,7 @@ const SpeakerDashboardPage = () => {
             if (!user) return;
             setLoading(true);
 
-            const { data, error } = await supabase
+            const { data, error } = await backendClient
                 .from('speakers')
                 .select('events!speakers_event_id_fkey(*, profiles(name))')
                 .eq('user_id', user.id);

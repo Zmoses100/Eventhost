@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
@@ -22,7 +22,7 @@ const BankTransferPendingPage = () => {
       return;
     }
     setLoading(true);
-    const { data: ticketData, error: ticketError } = await supabase
+    const { data: ticketData, error: ticketError } = await backendClient
       .from('tickets')
       .select('*, events(*, profiles(*))')
       .eq('id', ticketId)

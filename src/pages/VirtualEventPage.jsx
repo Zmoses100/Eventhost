@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { useStripe } from '@stripe/react-stripe-js';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 
 import { useVirtualEvent } from '@/hooks/useVirtualEvent';
 import { useMediaControls } from '@/hooks/useMediaControls';
@@ -97,7 +97,7 @@ const VirtualEventPage = () => {
     setHasDownloaded(true);
     toast({ title: "Recording downloaded successfully.", description: "Your recording file is being saved." });
     
-    const { error } = await supabase
+    const { error } = await backendClient
       .from('events')
       .update({ recording_downloaded: true })
       .eq('id', eventId);

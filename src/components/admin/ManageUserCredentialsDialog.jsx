@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { Loader2, KeyRound } from 'lucide-react';
 
 const ManageUserCredentialsDialog = ({ open, onOpenChange, user, onSuccess }) => {
@@ -45,7 +45,7 @@ const ManageUserCredentialsDialog = ({ open, onOpenChange, user, onSuccess }) =>
     try {
       const {
         data: { session },
-      } = await supabase.auth.getSession();
+      } = await backendClient.auth.getSession();
       if (!session) {
         throw new Error('You must be logged in to perform this action.');
       }
@@ -58,7 +58,7 @@ const ManageUserCredentialsDialog = ({ open, onOpenChange, user, onSuccess }) =>
         body.password = newPassword;
       }
 
-      const { data, error } = await supabase.functions.invoke('update-user-by-admin', {
+      const { data, error } = await backendClient.functions.invoke('update-user-by-admin', {
         body: JSON.stringify(body),
         headers: {
           'Authorization': `Bearer ${session.access_token}`

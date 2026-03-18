@@ -437,3 +437,4 @@ export const supabase = {
 
 export default supabase;
 export const customSupabaseClient = supabase;
+export const backendClient = supabase;

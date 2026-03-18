@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { useAuth } from '@/context/SupabaseAuthContext';
 
 const HomePage = () => {
@@ -24,7 +24,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
-      let query = supabase.from('events').select('*').eq('status', 'Approved');
+      let query = backendClient.from('events').select('*').eq('status', 'Approved');
 
       const { data, error } = await query;
 

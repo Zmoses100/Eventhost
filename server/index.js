@@ -25,6 +25,7 @@ const signToken = (user) => jwt.sign({ sub: user.id, email: user.email }, JWT_SE
 
 const EMAIL_SETTING_KEY = 'email_settings';
 const EMAIL_DIAGNOSTIC_KEY = 'email_diagnostic';
+const PLATFORM_SETTING_KEY = 'platform_settings';
 const APP_BASE_URL = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
 const EMAIL_ENCRYPTION_SECRET = process.env.EMAIL_SETTINGS_ENCRYPTION_KEY || JWT_SECRET;
 const EMAIL_ENCRYPTION_KEY = createHash('sha256').update(String(EMAIL_ENCRYPTION_SECRET)).digest();
@@ -49,6 +50,12 @@ const DEFAULT_EMAIL_SETTINGS = {
   fromEmail: process.env.MAIL_FROM_EMAIL || '',
   fromName: process.env.MAIL_FROM_NAME || 'Eventhost',
   replyToEmail: process.env.MAIL_REPLY_TO_EMAIL || '',
+};
+const DEFAULT_PLATFORM_SETTINGS = {
+  platformName: 'EventHost',
+  maintenanceMode: false,
+  allowEventCreation: true,
+  commissionRate: 5,
 };
 
 function encryptSecret(value) {
@@ -92,6 +99,18 @@ function getEmailSettings(db) {
     resolved.smtpPasswordEncrypted = encryptSecret(process.env.SMTP_PASSWORD);
   }
   return resolved;
+}
+
+function getPlatformSettings(db) {
+  const stored = getSetting(db, PLATFORM_SETTING_KEY) || {};
+  return {
+    platformName: (stored.platformName ? String(stored.platformName).trim() : '') || DEFAULT_PLATFORM_SETTINGS.platformName,
+    maintenanceMode: stored.maintenanceMode === undefined ? DEFAULT_PLATFORM_SETTINGS.maintenanceMode : Boolean(stored.maintenanceMode),
+    allowEventCreation: stored.allowEventCreation === undefined ? DEFAULT_PLATFORM_SETTINGS.allowEventCreation : Boolean(stored.allowEventCreation),
+    commissionRate: Number.isFinite(Number(stored.commissionRate))
+      ? Math.max(0, Math.min(100, Number(stored.commissionRate)))
+      : DEFAULT_PLATFORM_SETTINGS.commissionRate,
+  };
 }
 
 function sanitizeEmailSettings(settings) {
@@ -423,6 +442,47 @@ app.get('/api/admin/email-settings', async (_req, res) => {
       settings: sanitizeEmailSettings(settings),
       status: emailSettingsStatus(settings),
       diagnostic,
+    },
+    error: null,
+  });
+});
+
+app.get('/api/admin/platform-settings', async (_req, res) => {
+  const db = await readDb();
+  res.json({
+    data: {
+      settings: getPlatformSettings(db),
+    },
+    error: null,
+  });
+});
+
+app.put('/api/admin/platform-settings', adminEmailRateLimit, async (req, res) => {
+  const db = await readDb();
+  const current = getPlatformSettings(db);
+  const input = req.body || {};
+  const next = {
+    platformName: input.platformName === undefined ? current.platformName : String(input.platformName || '').trim(),
+    maintenanceMode: input.maintenanceMode === undefined ? current.maintenanceMode : Boolean(input.maintenanceMode),
+    allowEventCreation: input.allowEventCreation === undefined ? current.allowEventCreation : Boolean(input.allowEventCreation),
+    commissionRate: input.commissionRate === undefined ? current.commissionRate : Number(input.commissionRate),
+  };
+
+  if (!next.platformName) {
+    res.status(400).json({ error: { message: 'Platform name is required.' } });
+    return;
+  }
+  if (!Number.isFinite(next.commissionRate) || next.commissionRate < 0 || next.commissionRate > 100) {
+    res.status(400).json({ error: { message: 'Commission rate must be a number between 0 and 100.' } });
+    return;
+  }
+
+  setSetting(db, PLATFORM_SETTING_KEY, next);
+  await writeDb(db);
+  res.json({
+    data: {
+      settings: next,
+      message: 'Platform settings saved successfully.',
     },
     error: null,
   });

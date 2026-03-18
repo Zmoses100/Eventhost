@@ -7,21 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/use-toast';
-import useLocalStorage from '@/hooks/use-local-storage';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ArrowLeft, MailWarning, Save, DollarSign } from 'lucide-react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiRequest } from '@/lib/apiClient';
 
 const AdminSettingsPage = () => {
-  const [settings, setSettings] = useLocalStorage('platform_settings', {
+  const [localSettings, setLocalSettings] = useState({
     platformName: 'EventHost',
     maintenanceMode: false,
     allowEventCreation: true,
     commissionRate: 5,
   });
-
-  const [localSettings, setLocalSettings] = useState(settings);
+  const [savingSettings, setSavingSettings] = useState(false);
   const [emailSettings, setEmailSettings] = useState({
     enabled: false,
     queueEnabled: false,
@@ -44,26 +42,49 @@ const AdminSettingsPage = () => {
   const [savingEmail, setSavingEmail] = useState(false);
 
   useEffect(() => {
-    const loadEmailSettings = async () => {
-      const { data, error } = await supabase.admin.getEmailSettings();
-      if (error) {
-        toast({ title: 'Could not load email settings', description: error.message, variant: 'destructive' });
-        return;
+    const loadSettings = async () => {
+      const [platformResponse, emailResponse] = await Promise.all([
+        apiRequest('/api/admin/platform-settings'),
+        apiRequest('/api/admin/email-settings'),
+      ]);
+
+      if (platformResponse.error) {
+        toast({ title: 'Could not load platform settings', description: platformResponse.error.message, variant: 'destructive' });
+      } else if (platformResponse.data?.settings) {
+        setLocalSettings(platformResponse.data.settings);
       }
-      const loaded = data?.settings || {};
-      setEmailSettings((prev) => ({ ...prev, ...loaded, smtpPassword: '' }));
-      setEmailStatus(data?.status || { configured: false, issues: [] });
-      setDiagnostic(data?.diagnostic || null);
+
+      if (emailResponse.error) {
+        toast({ title: 'Could not load email settings', description: emailResponse.error.message, variant: 'destructive' });
+      } else {
+        const loaded = emailResponse.data?.settings || {};
+        setEmailSettings((prev) => ({ ...prev, ...loaded, smtpPassword: '' }));
+        setEmailStatus(emailResponse.data?.status || { configured: false, issues: [] });
+        setDiagnostic(emailResponse.data?.diagnostic || null);
+      }
     };
-    loadEmailSettings();
+    loadSettings();
   }, []);
 
-  const handleSave = () => {
-    setSettings(localSettings);
-    toast({
-      title: 'Settings Saved!',
-      description: 'Your changes have been successfully saved.',
+  const handleSave = async () => {
+    setSavingSettings(true);
+    const payload = {
+      ...localSettings,
+      commissionRate: Number(localSettings.commissionRate) || 0,
+    };
+    const { data, error } = await apiRequest('/api/admin/platform-settings', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
     });
+    if (error) {
+      toast({ title: 'Settings not saved', description: error.message, variant: 'destructive' });
+    } else {
+      if (data?.settings) {
+        setLocalSettings(data.settings);
+      }
+      toast({ title: 'Settings Saved!', description: 'Your changes have been successfully saved.' });
+    }
+    setSavingSettings(false);
   };
 
   const handleSaveEmailSettings = async () => {
@@ -72,7 +93,10 @@ const AdminSettingsPage = () => {
       ...emailSettings,
       smtpPassword: emailSettings.smtpPassword,
     };
-    const { data, error } = await supabase.admin.saveEmailSettings(payload);
+    const { data, error } = await apiRequest('/api/admin/email-settings', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
     if (error) {
       toast({ title: 'Email settings not saved', description: error.message, variant: 'destructive' });
     } else {
@@ -95,7 +119,10 @@ const AdminSettingsPage = () => {
       return;
     }
     setSavingEmail(true);
-    const { data, error } = await supabase.admin.sendTestEmail(destination);
+    const { data, error } = await apiRequest('/api/admin/email-settings/test', {
+      method: 'POST',
+      body: JSON.stringify({ toEmail: destination }),
+    });
     if (error) {
       toast({ title: 'Test email failed', description: error.message, variant: 'destructive' });
     } else {
@@ -330,7 +357,7 @@ const AdminSettingsPage = () => {
           </Card>
 
           <div className="flex justify-end">
-            <Button onClick={handleSave} className="bg-white text-purple-600 hover:bg-white/90">
+            <Button onClick={handleSave} className="bg-white text-purple-600 hover:bg-white/90" disabled={savingSettings}>
               <Save className="h-4 w-4 mr-2" />
               Save Changes
             </Button>

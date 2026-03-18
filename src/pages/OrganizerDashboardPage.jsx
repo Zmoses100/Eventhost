@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, BarChart, Settings, Loader2, CreditCard, PlayCircle, Users } from 'lucide-react';
 import { useAuth } from '@/context/SupabaseAuthContext';
 import { Helmet } from 'react-helmet';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { toast } from '@/components/ui/use-toast';
 
 const OrganizerDashboardPage = () => {
@@ -21,7 +21,7 @@ const OrganizerDashboardPage = () => {
       if (!user) return;
       setLoading(true);
 
-      const { data: eventsData, error: eventsError } = await supabase
+      const { data: eventsData, error: eventsError } = await backendClient
         .from('events')
         .select('*')
         .eq('organizer_id', user.id);
@@ -33,7 +33,7 @@ const OrganizerDashboardPage = () => {
         
         if (eventsData && eventsData.length > 0) {
           const eventIds = eventsData.map(event => event.id);
-          const { count, error: countError } = await supabase
+          const { count, error: countError } = await backendClient
             .from('tickets')
             .select('*', { count: 'exact', head: true })
             .in('event_id', eventIds)

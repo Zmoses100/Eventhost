@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,7 @@ const GuestRegistrationDialog = ({ event, onSuccess }) => {
     }
     setIsSubmitting(true);
 
-    const { error, data } = await supabase.auth.signInWithOtp({
+    const { error, data } = await backendClient.auth.signInWithOtp({
       email,
       options: {
         shouldCreateUser: true,

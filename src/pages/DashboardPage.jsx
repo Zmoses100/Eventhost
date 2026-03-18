@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/SupabaseAuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,7 +44,7 @@ const UploadProofDialog = ({ ticket, onUploadSuccess }) => {
     const fileName = `${ticket.id}-${Date.now()}.${fileExt}`;
     const filePath = `${user.id}/${fileName}`;
 
-    let { error: uploadError } = await supabase.storage
+    let { error: uploadError } = await backendClient.storage
       .from('payment_proofs')
       .upload(filePath, file, { upsert: false });
 
@@ -54,11 +54,11 @@ const UploadProofDialog = ({ ticket, onUploadSuccess }) => {
       return;
     }
 
-    const { data } = supabase.storage
+    const { data } = backendClient.storage
       .from('payment_proofs')
       .getPublicUrl(filePath);
       
-    const { error: updateError } = await supabase
+    const { error: updateError } = await backendClient
       .from('tickets')
       .update({ payment_proof_url: data.publicUrl })
       .eq('id', ticket.id);
@@ -130,7 +130,7 @@ const AttendeeDashboard = ({ user, profile }) => {
   const fetchTickets = async () => {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await backendClient
       .from('tickets')
       .select('*, events(*, profiles(name))')
       .eq('user_id', user.id)

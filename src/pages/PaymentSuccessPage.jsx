@@ -5,7 +5,7 @@ import { CheckCircle, ArrowLeft, Download, Ticket, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Helmet } from 'react-helmet';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { toast } from '@/components/ui/use-toast';
 
 const PaymentSuccessPage = () => {
@@ -21,11 +21,11 @@ const PaymentSuccessPage = () => {
     useEffect(() => {
         const fetchData = async () => {
             if (eventId) {
-                const { data: eventData } = await supabase.from('events').select('*').eq('id', eventId).single();
+                const { data: eventData } = await backendClient.from('events').select('*').eq('id', eventId).single();
                 if (eventData) setEvent(eventData);
             }
             if (ticketId) {
-                const { data: ticketData } = await supabase.from('tickets').select('*').eq('id', ticketId).single();
+                const { data: ticketData } = await backendClient.from('tickets').select('*').eq('id', ticketId).single();
                 if (ticketData) setTicket(ticketData);
             }
         };
@@ -34,7 +34,7 @@ const PaymentSuccessPage = () => {
 
     const handleDownloadTicket = async () => {
         setGenerating(true);
-        const { data, error } = await supabase.functions.invoke('generate-ticket', {
+        const { data, error } = await backendClient.functions.invoke('generate-ticket', {
             body: { ticket_id: ticketId },
         });
 
@@ -43,7 +43,7 @@ const PaymentSuccessPage = () => {
         } else {
             toast({ title: 'Ticket Generated!', description: 'Your ticket is ready for download.' });
             // Re-fetch ticket to get new download URLs
-            const { data: ticketData } = await supabase.from('tickets').select('*').eq('id', ticketId).single();
+            const { data: ticketData } = await backendClient.from('tickets').select('*').eq('id', ticketId).single();
             if (ticketData) setTicket(ticketData);
             if (data.pdfUrl) {
                 window.open(data.pdfUrl, '_blank');

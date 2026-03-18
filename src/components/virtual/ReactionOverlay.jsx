@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 
 const ReactionOverlay = ({ eventId }) => {
   const [reactions, setReactions] = useState([]);
@@ -20,12 +20,12 @@ const ReactionOverlay = ({ eventId }) => {
   }, []);
 
   useEffect(() => {
-    const channel = supabase.channel(`reactions:${eventId}`)
+    const channel = backendClient.channel(`reactions:${eventId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reactions', filter: `event_id=eq.${eventId}` }, handleNewReaction)
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      backendClient.removeChannel(channel);
     };
   }, [eventId, handleNewReaction]);
 

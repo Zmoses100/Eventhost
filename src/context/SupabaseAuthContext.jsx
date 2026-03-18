@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchProfile = useCallback(async (userId) => {
     if (!userId) return null;
-    const { data, error } = await supabase
+    const { data, error } = await backendClient
       .from('profiles')
       .select('*')
       .eq('id', userId)
@@ -53,13 +53,13 @@ export const AuthProvider = ({ children }) => {
   
   useEffect(() => {
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await backendClient.auth.getSession();
       await handleSession(session, null);
     };
 
     getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = backendClient.auth.onAuthStateChange(
       async (event, session) => {
         await handleSession(session, event);
         if (event === 'PASSWORD_RECOVERY') {
@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }) => {
 
 
   const signUp = useCallback(async (email, password, options) => {
-    const { error } = await supabase.auth.signUp({
+    const { error } = await backendClient.auth.signUp({
       email,
       password,
       options,
@@ -91,7 +91,7 @@ export const AuthProvider = ({ children }) => {
   }, [toast]);
 
   const signIn = useCallback(async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await backendClient.auth.signInWithPassword({
       email,
       password,
     });
@@ -108,7 +108,7 @@ export const AuthProvider = ({ children }) => {
   }, [toast]);
 
   const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await backendClient.auth.signOut();
     navigate('/');
     if (error) {
       toast({
@@ -126,7 +126,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updatePassword = useCallback(async (password) => {
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await backendClient.auth.updateUser({ password });
     if (error) {
       toast({
         variant: "destructive",

@@ -214,8 +214,10 @@ const auth = {
     });
 
     if (error) return { data: null, error };
-    setStoredSession(data.session);
-    notifyAuthListeners('SIGNED_IN', data.session);
+    if (data.session) {
+      setStoredSession(data.session);
+      notifyAuthListeners('SIGNED_IN', data.session);
+    }
     return { data, error: null };
   },
 
@@ -253,13 +255,42 @@ const auth = {
     });
 
     if (error) return { data: null, error };
-    setStoredSession(data.session);
-    notifyAuthListeners('SIGNED_IN', data.session);
+    if (data.session) {
+      setStoredSession(data.session);
+      notifyAuthListeners('SIGNED_IN', data.session);
+    }
     return { data, error: null };
   },
 
   async resetPasswordForEmail(email) {
     return apiRequest('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  async completePasswordReset({ token, password }) {
+    return apiRequest('/api/auth/complete-password-reset', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  },
+
+  async verifyEmail(token) {
+    const { data, error } = await apiRequest('/api/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+    if (error) return { data: null, error };
+    if (data?.session) {
+      setStoredSession(data.session);
+      notifyAuthListeners('SIGNED_IN', data.session);
+    }
+    return { data, error: null };
+  },
+
+  async resendVerificationEmail(email) {
+    return apiRequest('/api/auth/resend-verification', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });
@@ -375,11 +406,30 @@ const rpc = async (name, args = {}) => apiRequest(`/api/rpc/${name}`, {
 
 const from = (table) => new QueryBuilder(table);
 
+const admin = {
+  async getEmailSettings() {
+    return apiRequest('/api/admin/email-settings');
+  },
+  async saveEmailSettings(settings) {
+    return apiRequest('/api/admin/email-settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  },
+  async sendTestEmail(toEmail) {
+    return apiRequest('/api/admin/email-settings/test', {
+      method: 'POST',
+      body: JSON.stringify({ toEmail }),
+    });
+  },
+};
+
 export const supabase = {
   auth,
   from,
   storage,
   rpc,
+  admin,
   functions,
   channel,
   removeChannel,

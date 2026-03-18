@@ -23,7 +23,7 @@ const GuestRegistrationDialog = ({ event, onSuccess }) => {
     }
     setIsSubmitting(true);
 
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error, data } = await supabase.auth.signInWithOtp({
       email,
       options: {
         shouldCreateUser: true,
@@ -41,7 +41,10 @@ const GuestRegistrationDialog = ({ event, onSuccess }) => {
     if (error) {
       toast({ title: "Registration Failed", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Check your email!", description: "We've sent a magic link to your email to complete your registration." });
+      toast({
+        title: "Registration received",
+        description: data?.message || "If your account exists, check your email for the sign-in link.",
+      });
       if (onSuccess) onSuccess();
     }
   };

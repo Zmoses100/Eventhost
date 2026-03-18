@@ -28,6 +28,8 @@ const DEFAULT_DB = {
   sponsors: [],
   notifications: [],
   payment_proofs: [],
+  app_settings: [],
+  email_tokens: [],
 };
 
 let writeLock = Promise.resolve();

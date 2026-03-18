@@ -221,7 +221,16 @@ const AdminSettingsPage = () => {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-white">SMTP Port</Label>
-                  <Input type="number" min="1" value={emailSettings.smtpPort} onChange={(e) => setEmailSettings({ ...emailSettings, smtpPort: Number(e.target.value) || '' })} className="bg-white/10 border-white/20 text-white" />
+                  <Input
+                    type="number"
+                    min="1"
+                    value={emailSettings.smtpPort}
+                    onChange={(e) => {
+                      const nextPort = Number(e.target.value);
+                      setEmailSettings({ ...emailSettings, smtpPort: Number.isInteger(nextPort) && nextPort > 0 ? nextPort : emailSettings.smtpPort });
+                    }}
+                    className="bg-white/10 border-white/20 text-white"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-white">SMTP Username</Label>

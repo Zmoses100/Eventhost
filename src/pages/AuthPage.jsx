@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,6 +21,7 @@ const AuthPage = () => {
     const { signIn, signUp } = useAuth();
     const [loading, setLoading] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
+    const verifiedTokenRef = useRef('');
     const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -133,7 +134,8 @@ const AuthPage = () => {
 
     useEffect(() => {
         const runVerification = async () => {
-            if (!verifyToken) return;
+            if (!verifyToken || verifiedTokenRef.current === verifyToken) return;
+            verifiedTokenRef.current = verifyToken;
             setIsVerifying(true);
             const { error } = await supabase.auth.verifyEmail(verifyToken);
             if (error) {

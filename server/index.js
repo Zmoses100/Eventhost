@@ -6,6 +6,7 @@ import { randomUUID, createHash, createCipheriv, createDecipheriv, randomBytes }
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import { rateLimit } from 'express-rate-limit';
 import { ensureDb, readDb, writeDb, getTable, ensureRecord, sanitizeUser } from './lib/db.js';
 
 const app = express();
@@ -25,8 +26,10 @@ const signToken = (user) => jwt.sign({ sub: user.id, email: user.email }, JWT_SE
 const EMAIL_SETTING_KEY = 'email_settings';
 const EMAIL_DIAGNOSTIC_KEY = 'email_diagnostic';
 const APP_BASE_URL = process.env.APP_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
-const EMAIL_ENCRYPTION_KEY = createHash('sha256').update(String(JWT_SECRET)).digest();
+const EMAIL_ENCRYPTION_SECRET = process.env.EMAIL_SETTINGS_ENCRYPTION_KEY || JWT_SECRET;
+const EMAIL_ENCRYPTION_KEY = createHash('sha256').update(String(EMAIL_ENCRYPTION_SECRET)).digest();
 const EMAIL_ADDRESS_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ALLOWED_ROLES = new Set(['Attendee', 'Event Organizer', 'Speaker']);
 const getBool = (value, fallback = false) => {
   if (value === undefined || value === null || value === '') return fallback;
   if (typeof value === 'boolean') return value;
@@ -188,8 +191,22 @@ function hashToken(token) {
   return createHash('sha256').update(String(token)).digest('hex');
 }
 
+function pruneEmailTokens(db) {
+  const tokens = getTable(db, 'email_tokens');
+  const cutoff = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  db.email_tokens = tokens.filter((item) => {
+    if (!item?.expires_at) return false;
+    const expiresAt = new Date(item.expires_at).getTime();
+    if (Number.isNaN(expiresAt)) return false;
+    if (expiresAt < cutoff) return false;
+    if (item.used_at && new Date(item.used_at).getTime() < cutoff) return false;
+    return true;
+  });
+}
+
 function createEmailToken(db, { userId, email, type, expiresMinutes }) {
-  const rawToken = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '');
+  pruneEmailTokens(db);
+  const rawToken = randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + expiresMinutes * 60 * 1000).toISOString();
   const record = ensureRecord({
     user_id: userId,
@@ -204,6 +221,7 @@ function createEmailToken(db, { userId, email, type, expiresMinutes }) {
 }
 
 function consumeEmailToken(db, { token, type }) {
+  pruneEmailTokens(db);
   const tokens = getTable(db, 'email_tokens');
   const tokenHash = hashToken(token);
   const match = tokens.find((item) => item.type === type && item.token_hash === tokenHash);
@@ -225,7 +243,8 @@ async function createUserInDb(db, { email, password, options = {}, emailConfirme
 
   const userId = randomUUID();
   const password_hash = await bcrypt.hash(password, 10);
-  const role = options?.data?.role || 'Attendee';
+  const requestedRole = options?.data?.role || 'Attendee';
+  const role = ALLOWED_ROLES.has(requestedRole) ? requestedRole : 'Attendee';
   const user = ensureRecord({ id: userId, email: normalizedEmail, role, password_hash, email_confirmed_at: emailConfirmedAt });
   users.push(user);
 
@@ -234,7 +253,7 @@ async function createUserInDb(db, { email, password, options = {}, emailConfirme
     id: userId,
     email: normalizedEmail,
     role,
-    name: metadata.name || email.split('@')[0],
+    name: metadata.name || normalizedEmail.split('@')[0],
     phone: metadata.phone || '',
     venue_name: metadata.venue_name || '',
     paypal_email: metadata.paypal_email || '',
@@ -243,6 +262,18 @@ async function createUserInDb(db, { email, password, options = {}, emailConfirme
   }));
 
   return { user, error: null };
+}
+
+async function hydrateEmailSettingsFromEnv() {
+  if (!process.env.SMTP_PASSWORD) return;
+  const db = await readDb();
+  const current = getSetting(db, EMAIL_SETTING_KEY) || {};
+  if (current.smtpPasswordEncrypted) return;
+  setSetting(db, EMAIL_SETTING_KEY, {
+    ...getEmailSettings(db),
+    smtpPasswordEncrypted: encryptSecret(process.env.SMTP_PASSWORD),
+  });
+  await writeDb(db);
 }
 
 function getAuthPolicy(db) {
@@ -370,6 +401,14 @@ function enrichRow(table, row, db) {
   return row;
 }
 
+const adminEmailRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 15,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: { message: 'Too many requests. Please try again shortly.' } },
+});
+
 app.get('/api/health', async (_req, res) => {
   await ensureDb();
   res.json({ ok: true, timestamp: nowIso() });
@@ -389,7 +428,7 @@ app.get('/api/admin/email-settings', async (_req, res) => {
   });
 });
 
-app.put('/api/admin/email-settings', async (req, res) => {
+app.put('/api/admin/email-settings', adminEmailRateLimit, async (req, res) => {
   const db = await readDb();
   const current = getEmailSettings(db);
   const input = req.body || {};
@@ -451,7 +490,7 @@ app.put('/api/admin/email-settings', async (req, res) => {
   });
 });
 
-app.post('/api/admin/email-settings/test', async (req, res) => {
+app.post('/api/admin/email-settings/test', adminEmailRateLimit, async (req, res) => {
   const db = await readDb();
   const settings = getEmailSettings(db);
   const destination = String(req.body?.toEmail || settings.replyToEmail || settings.fromEmail || '').trim();
@@ -1067,7 +1106,8 @@ app.use((error, _req, res, _next) => {
   res.status(500).json({ error: { message: 'Internal server error.' } });
 });
 
-ensureDb().then(() => {
+ensureDb().then(async () => {
+  await hydrateEmailSettingsFromEnv();
   app.listen(PORT, () => {
     console.log(`Eventhost API listening on http://localhost:${PORT}`);
   });

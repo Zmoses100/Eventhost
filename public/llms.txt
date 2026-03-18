@@ -1,0 +1,15 @@
+## Pages
+- [- EventHost](/eventdetails): No description available
+- [Checkout -](/checkout): No description available
+- [Event Analytics - EventHost](/analytics): Detailed analytics for your events.
+- [Host Dashboard:](/hostdashboard): No description available
+- [Manage Attendees -](/manageattendees): No description available
+- [Manage Payments - EventHost](/paymentmanagement): Approve or reject bank transfer payments for your events.
+- [My Messages - EventHost](/messages): View and send direct messages.
+- [My Notifications - EventHost](/notifications): View all your event notifications and updates.
+- [My Profile - Manage Your Account](/profile): View and edit your profile details, payment information, and account settings.
+- [Organizer Dashboard - EventHost](/organizerdashboard): Manage your events, view analytics, and more.
+- [Payment Pending -](/banktransferpending): No description available
+- [Payment Successful! - EventHost](/paymentsuccess): Your ticket purchase was successful.
+- [Speaker Dashboard - EventHost](/speakerdashboard): View your upcoming speaking engagements and manage your profile.
+- [Terms & Conditions - EventHost](/termsandconditions): Read the terms and conditions for using the EventHost platform.

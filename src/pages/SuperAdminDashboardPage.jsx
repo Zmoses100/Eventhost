@@ -7,7 +7,7 @@ import { Users, Calendar, Settings, BarChart, LogOut, PlusCircle, UserPlus, Acti
 import { toast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { supabase } from '@/lib/customSupabaseClient';
+import { apiRequest, runQuery } from '@/lib/apiClient';
 
 const SuperAdminDashboardPage = () => {
   const navigate = useNavigate();
@@ -20,28 +20,33 @@ const SuperAdminDashboardPage = () => {
     const fetchData = async () => {
       setLoading(true);
       
-      const { data: usersData, count: usersCount, error: usersError } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .limit(5);
+      const { data: usersData, count: usersCount, error: usersError } = await runQuery({
+        table: 'profiles',
+        action: 'select',
+        orderBy: { column: 'created_at', ascending: false },
+        limit: 5,
+        selectOptions: { count: 'exact' },
+      });
 
-      const { data: eventsData, count: eventsCount, error: eventsError } = await supabase
-        .from('events')
-        .select('id, title, status, created_at, profiles(name)', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .limit(5);
+      const { data: eventsData, count: eventsCount, error: eventsError } = await runQuery({
+        table: 'events',
+        action: 'select',
+        orderBy: { column: 'created_at', ascending: false },
+        limit: 5,
+        selectOptions: { count: 'exact' },
+      });
 
-      const { data: ticketsData, error: ticketsError } = await supabase
-        .from('tickets')
-        .select('price_paid');
+      const { data: ticketsData, error: ticketsError } = await runQuery({
+        table: 'tickets',
+        action: 'select',
+      });
 
       if (usersError || eventsError || ticketsError) {
         toast({ title: "Error fetching data", description: "Could not load dashboard stats.", variant: "destructive" });
         if (usersError) console.error('Users error:', usersError);
         if (eventsError) console.error('Events error:', eventsError);
       } else {
-        const totalSales = ticketsData.reduce((acc, ticket) => acc + (ticket.price_paid || 0), 0);
+        const totalSales = (ticketsData || []).reduce((acc, ticket) => acc + (ticket.price_paid || 0), 0);
         setStats({
           events: eventsCount || 0,
           users: usersCount || 0,
@@ -57,7 +62,9 @@ const SuperAdminDashboardPage = () => {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await apiRequest('/api/auth/signout', { method: 'POST' });
+    localStorage.removeItem('eventhost.auth.session');
+    localStorage.removeItem('super_admin_token');
     toast({
       title: 'Logged Out',
       description: 'You have been successfully logged out.',

@@ -104,7 +104,7 @@ function getEmailSettings(db) {
 function getPlatformSettings(db) {
   const stored = getSetting(db, PLATFORM_SETTING_KEY) || {};
   return {
-    platformName: String(stored.platformName || DEFAULT_PLATFORM_SETTINGS.platformName).trim() || DEFAULT_PLATFORM_SETTINGS.platformName,
+    platformName: (stored.platformName ? String(stored.platformName).trim() : '') || DEFAULT_PLATFORM_SETTINGS.platformName,
     maintenanceMode: stored.maintenanceMode === undefined ? DEFAULT_PLATFORM_SETTINGS.maintenanceMode : Boolean(stored.maintenanceMode),
     allowEventCreation: stored.allowEventCreation === undefined ? DEFAULT_PLATFORM_SETTINGS.allowEventCreation : Boolean(stored.allowEventCreation),
     commissionRate: Number.isFinite(Number(stored.commissionRate))

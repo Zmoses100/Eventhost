@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { useAuth } from '@/context/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -33,7 +33,7 @@ const CheckoutPage = () => {
 
   const fetchEventData = useCallback(async () => {
     setLoading(true);
-    const { data: eventData, error: eventError } = await supabase
+    const { data: eventData, error: eventError } = await backendClient
       .from('events')
       .select('*, profiles(id, name, paypal_email, bank_transfer_details)')
       .eq('id', eventId)
@@ -49,7 +49,7 @@ const CheckoutPage = () => {
     setOrganizer(eventData.profiles);
 
     if (ticketTypeId) {
-      const { data: ttData, error: ttError } = await supabase
+      const { data: ttData, error: ttError } = await backendClient
         .from('ticket_types')
         .select('*')
         .eq('id', ticketTypeId)
@@ -91,7 +91,7 @@ const CheckoutPage = () => {
   const handleCreateTicket = async (paymentDetails) => {
     if (!user || !event || !ticketType) return;
 
-    const { data: ticketData, error } = await supabase.from('tickets').insert([
+    const { data: ticketData, error } = await backendClient.from('tickets').insert([
       {
         event_id: event.id,
         user_id: user.id,
@@ -112,7 +112,7 @@ const CheckoutPage = () => {
 
     // Trigger ticket generation if payment is confirmed
     if (ticketData.status === 'Confirmed') {
-        supabase.functions.invoke('generate-ticket', {
+        backendClient.functions.invoke('generate-ticket', {
             body: { ticket_id: ticketData.id },
         }).catch(err => console.error("Error invoking ticket generation function:", err));
     }

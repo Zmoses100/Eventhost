@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/SupabaseAuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,7 +20,7 @@ const PaymentManagementPage = () => {
     if (!user) return;
     setLoading(true);
 
-    const { data: eventsData, error: eventsError } = await supabase
+    const { data: eventsData, error: eventsError } = await backendClient
       .from('events')
       .select('id')
       .eq('organizer_id', user.id);
@@ -38,7 +38,7 @@ const PaymentManagementPage = () => {
       return;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await backendClient
       .from('tickets')
       .select('*, profiles(*), events(title)')
       .in('event_id', eventIds)
@@ -58,7 +58,7 @@ const PaymentManagementPage = () => {
 
   const handleUpdateStatus = async (ticketId, newStatus) => {
     setUpdatingTicketId(ticketId);
-    const { error } = await supabase
+    const { error } = await backendClient
       .from('tickets')
       .update({ status: newStatus })
       .eq('id', ticketId);

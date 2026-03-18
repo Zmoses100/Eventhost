@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,7 +41,7 @@ const ManageTicketStyle = ({ event, onUpdate }) => {
         const fileName = `${Date.now()}.${fileExt}`;
         const filePath = `${event.id}/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await backendClient.storage
             .from('ticket_styles')
             .upload(filePath, file, { upsert: true });
 
@@ -51,11 +51,11 @@ const ManageTicketStyle = ({ event, onUpdate }) => {
             return;
         }
 
-        const { data: { publicUrl } } = supabase.storage
+        const { data: { publicUrl } } = backendClient.storage
             .from('ticket_styles')
             .getPublicUrl(filePath);
 
-        const { error: dbError } = await supabase
+        const { error: dbError } = await backendClient
             .from('events')
             .update({ ticket_style_url: publicUrl })
             .eq('id', event.id);
@@ -109,7 +109,7 @@ const ManageTicketTypes = ({ eventId, ticketTypes, fetchTicketTypes }) => {
 
   const handleSaveTicketType = async () => {
     setIsSaving(true);
-    const { error } = await supabase.from('ticket_types').insert({
+    const { error } = await backendClient.from('ticket_types').insert({
       event_id: eventId,
       ...newTicketType,
       price: parseFloat(newTicketType.price)
@@ -126,7 +126,7 @@ const ManageTicketTypes = ({ eventId, ticketTypes, fetchTicketTypes }) => {
   };
   
   const handleDelete = async (id) => {
-    const { error } = await supabase.from('ticket_types').delete().eq('id', id);
+    const { error } = await backendClient.from('ticket_types').delete().eq('id', id);
     if (error) {
       toast({ title: 'Error deleting ticket type', description: error.message, variant: 'destructive' });
     } else {
@@ -204,7 +204,7 @@ const ManageCommunications = ({ eventId, communications, fetchCommunications }) 
         e.preventDefault();
         setIsSending(true);
 
-        const { data, error } = await supabase.functions.invoke('send-communication-email', {
+        const { data, error } = await backendClient.functions.invoke('send-communication-email', {
             body: { event_id: eventId, subject, message },
         });
 
@@ -279,7 +279,7 @@ const ManageAttendeesPage = () => {
     if (!user || !eventId) return;
     setLoading(true);
 
-    const { data: eventData, error: eventError } = await supabase.from('events').select('*').eq('id', eventId).single();
+    const { data: eventData, error: eventError } = await backendClient.from('events').select('*').eq('id', eventId).single();
     if (eventError || !eventData || eventData.organizer_id !== user.id) {
         toast({ title: "Access Denied", description: "You are not the organizer of this event.", variant: "destructive" });
         setLoading(false);
@@ -296,12 +296,12 @@ const ManageAttendeesPage = () => {
   }, [user, eventId]);
 
   const fetchTicketTypes = async () => {
-    const { data, error } = await supabase.from('ticket_types').select('*').eq('event_id', eventId).order('created_at');
+    const { data, error } = await backendClient.from('ticket_types').select('*').eq('event_id', eventId).order('created_at');
     if (!error) setTicketTypes(data);
   };
   
   const fetchCommunications = async () => {
-    const { data, error } = await supabase.from('communications').select('*').eq('event_id', eventId).order('sent_at', { ascending: false });
+    const { data, error } = await backendClient.from('communications').select('*').eq('event_id', eventId).order('sent_at', { ascending: false });
     if (!error) setCommunications(data);
   };
 

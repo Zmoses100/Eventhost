@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/SupabaseAuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,7 @@ const NewMessageDialog = ({ onMessageSent }) => {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const { data, error } = await supabase.from('profiles').select('id, name, email, profile_picture_url');
+      const { data, error } = await backendClient.from('profiles').select('id, name, email, profile_picture_url');
       if (!error) {
         setUsers(data.filter(u => u.id !== user.id));
       }
@@ -51,7 +51,7 @@ const NewMessageDialog = ({ onMessageSent }) => {
       return;
     }
     setSending(true);
-    const { error } = await supabase.from('direct_messages').insert({
+    const { error } = await backendClient.from('direct_messages').insert({
       sender_id: user.id,
       receiver_id: recipient.id,
       content: content.trim(),
@@ -154,7 +154,7 @@ const MessagesPage = () => {
   const fetchConversations = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase.rpc('get_conversations');
+    const { data, error } = await backendClient.rpc('get_conversations');
     if (error) {
       toast({ title: "Error fetching conversations", description: error.message, variant: "destructive" });
     } else {
@@ -166,7 +166,7 @@ const MessagesPage = () => {
   const fetchMessages = useCallback(async (partnerId) => {
     if(!partnerId || !user) return;
     setMessageLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await backendClient
       .from('direct_messages')
       .select('*, sender:sender_id(id, name, profile_picture_url)')
       .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`)
@@ -177,7 +177,7 @@ const MessagesPage = () => {
     } else {
       setMessages(data);
       // Mark as read
-      await supabase
+      await backendClient
         .from('direct_messages')
         .update({ is_read: true })
         .eq('receiver_id', user.id)
@@ -189,7 +189,7 @@ const MessagesPage = () => {
   useEffect(() => {
     fetchConversations();
     
-    const channel = supabase.channel('direct-messages')
+    const channel = backendClient.channel('direct-messages')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'direct_messages' }, payload => {
         fetchConversations();
         if(selectedConversation && (payload.new.sender_id === selectedConversation.partner.id || payload.new.receiver_id === selectedConversation.partner.id)){
@@ -199,7 +199,7 @@ const MessagesPage = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      backendClient.removeChannel(channel);
     };
 
   }, [user, fetchConversations, selectedConversation, fetchMessages]);
@@ -212,7 +212,7 @@ const MessagesPage = () => {
   const handleSendReply = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
     setSendingReply(true);
-    const { error } = await supabase.from('direct_messages').insert({
+    const { error } = await backendClient.from('direct_messages').insert({
       sender_id: user.id,
       receiver_id: selectedConversation.partner.id,
       content: newMessage.trim(),

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/use-toast';
 import SeatPicker from '@/components/SeatPicker';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 
 const SeatSelectionPage = () => {
   const { eventId } = useParams();
@@ -20,7 +20,7 @@ const SeatSelectionPage = () => {
 
   const fetchEventData = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await backendClient
       .from('events')
       .select('*')
       .eq('id', eventId)

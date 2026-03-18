@@ -1,11 +1,11 @@
 import React from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { toast } from '@/components/ui/use-toast';
 
 export const useEventActions = (eventId, user, userProfile, onActionSuccess) => {
 
     const handleInviteSpeaker = async (speaker) => {
-        const { error } = await supabase.from('speakers').insert({
+        const { error } = await backendClient.from('speakers').insert({
             event_id: eventId,
             user_id: speaker.id,
         });
@@ -18,7 +18,7 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
 
     const handleRemoveSpeaker = async (speakerId) => {
-        const { error } = await supabase.from('speakers').delete()
+        const { error } = await backendClient.from('speakers').delete()
             .eq('event_id', eventId)
             .eq('user_id', speakerId);
         if (error) {
@@ -30,7 +30,7 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
     
     const sendMessage = async (content) => {
-        const { error } = await supabase.from('messages').insert({
+        const { error } = await backendClient.from('messages').insert({
             event_id: eventId,
             user_id: user.id,
             user_name: userProfile.name || user.email,
@@ -41,7 +41,7 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
 
     const handleAddChapter = async (chapter) => {
-        const { error } = await supabase.from('chapters').insert({ event_id: eventId, timestamp_seconds: chapter.timestamp, title: chapter.title });
+        const { error } = await backendClient.from('chapters').insert({ event_id: eventId, timestamp_seconds: chapter.timestamp, title: chapter.title });
         if (error) {
             console.error(error);
             toast({ title: 'Failed to add chapter', description: error.message, variant: "destructive" });
@@ -50,17 +50,17 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
 
     const handleAskQuestion = async (question) => {
-        const { error } = await supabase.from('qas').insert({ event_id: eventId, user_id: user.id, question, author_name: userProfile.name || user.email, votes: 0, is_answered: false });
+        const { error } = await backendClient.from('qas').insert({ event_id: eventId, user_id: user.id, question, author_name: userProfile.name || user.email, votes: 0, is_answered: false });
         if(error) toast({ title: 'Failed to ask question', description: error.message, variant: 'destructive' });
     };
 
     const handleVoteQuestion = async (qaId) => {
-        const { error } = await supabase.rpc('vote_qa', { qa_id_to_vote: qaId, user_id_voting: user.id });
+        const { error } = await backendClient.rpc('vote_qa', { qa_id_to_vote: qaId, user_id_voting: user.id });
         if(error) toast({ title: 'Vote failed', description: error.message, variant: 'destructive' });
     };
 
     const handleMarkQuestionAsAnswered = async (qaId) => {
-        const { error } = await supabase.from('qas').update({ is_answered: true }).eq('id', qaId);
+        const { error } = await backendClient.from('qas').update({ is_answered: true }).eq('id', qaId);
         if (error) {
             toast({ title: 'Failed to update question', description: error.message, variant: 'destructive' });
         } else {
@@ -69,7 +69,7 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
 
     const handleCreatePoll = async ({ question, options }) => {
-        const { error } = await supabase.from('polls').insert({ event_id: eventId, question, options: options.map(o => ({...o, votes: 0})), is_active: true });
+        const { error } = await backendClient.from('polls').insert({ event_id: eventId, question, options: options.map(o => ({...o, votes: 0})), is_active: true });
         if (error) {
             console.error(error);
             toast({ title: 'Failed to create poll', description: error.message, variant: 'destructive' });
@@ -78,12 +78,12 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
     
     const handleVotePoll = async (pollId, optionIndex) => {
-        const { error } = await supabase.rpc('vote_poll', { poll_id_to_vote: pollId, option_index_to_vote: optionIndex });
+        const { error } = await backendClient.rpc('vote_poll', { poll_id_to_vote: pollId, option_index_to_vote: optionIndex });
         if(error) toast({ title: 'Poll vote failed', description: error.message, variant: 'destructive' });
     };
     
     const handleCreateQuiz = async (quizData) => {
-        const { error } = await supabase.from('quizzes').insert({ event_id: eventId, ...quizData, is_active: true });
+        const { error } = await backendClient.from('quizzes').insert({ event_id: eventId, ...quizData, is_active: true });
         if (error) {
             console.error(error);
             toast({ title: 'Failed to create quiz', description: error.message, variant: 'destructive' });
@@ -92,7 +92,7 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
 
     const handleAnswerQuiz = async (quizId, optionIndex, callback) => {
-        const { data: quiz, error } = await supabase.from('quizzes').select('correct_option_index').eq('id', quizId).single();
+        const { data: quiz, error } = await backendClient.from('quizzes').select('correct_option_index').eq('id', quizId).single();
         if (error) {
             toast({ title: "Couldn't verify answer", description: error.message, variant: "destructive" });
             return;
@@ -101,7 +101,7 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
 
     const handleDropLink = async (linkData) => {
-        const { error } = await supabase.from('shared_links').insert({ event_id: eventId, ...linkData, is_active: true });
+        const { error } = await backendClient.from('shared_links').insert({ event_id: eventId, ...linkData, is_active: true });
         if (error) {
             console.error(error);
             toast({ title: 'Failed to share link', description: error.message, variant: 'destructive' });
@@ -110,7 +110,7 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
 
     const handleCreateCta = async (ctaData) => {
-        const { error } = await supabase.from('ctas').insert({ event_id: eventId, ...ctaData, is_active: true });
+        const { error } = await backendClient.from('ctas').insert({ event_id: eventId, ...ctaData, is_active: true });
         if (error) {
             console.error(error);
             toast({ title: 'Failed to create CTA', description: error.message, variant: 'destructive' });
@@ -119,7 +119,7 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
 
     const handleUpdateEventSettings = async (settings) => {
-      const { error } = await supabase.from('events').update(settings).eq('id', eventId);
+      const { error } = await backendClient.from('events').update(settings).eq('id', eventId);
       if (error) {
           toast({ title: 'Failed to update settings', description: error.message, variant: 'destructive' });
       } else {

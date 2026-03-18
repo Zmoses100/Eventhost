@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { v4 as uuidv4 } from 'uuid';
 
 const qualitySettings = {
@@ -109,7 +109,7 @@ export const useMediaControls = (setStream, setScreenStream, isCameraOn, setIsCa
     setIsUploading(true);
     toast({ title: "Uploading recording...", description: "This may take a moment." });
     const fileName = `${eventId}/${uuidv4()}.webm`;
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await backendClient.storage
       .from('event_recordings')
       .upload(fileName, blob);
 
@@ -119,9 +119,9 @@ export const useMediaControls = (setStream, setScreenStream, isCameraOn, setIsCa
       return;
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('event_recordings').getPublicUrl(fileName);
+    const { data: { publicUrl } } = backendClient.storage.from('event_recordings').getPublicUrl(fileName);
     
-    const { error: dbError } = await supabase
+    const { error: dbError } = await backendClient
       .from('events')
       .update({ recording_url: publicUrl })
       .eq('id', eventId);

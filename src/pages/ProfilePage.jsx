@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/SupabaseAuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -90,7 +90,7 @@ const ProfilePage = () => {
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await backendClient.storage
         .from('profile_pictures')
         .upload(filePath, avatarFile, { upsert: true });
 
@@ -100,7 +100,7 @@ const ProfilePage = () => {
         return;
       }
 
-      const { data: urlData } = supabase.storage
+      const { data: urlData } = backendClient.storage
         .from('profile_pictures')
         .getPublicUrl(filePath);
       
@@ -117,7 +117,7 @@ const ProfilePage = () => {
       updated_at: new Date(),
     };
 
-    const { error } = await supabase.from('profiles').upsert(updates);
+    const { error } = await backendClient.from('profiles').upsert(updates);
 
     if (error) {
       toast({ title: 'Save Failed', description: error.message, variant: 'destructive' });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { useAuth } from '@/context/SupabaseAuthContext';
 import { Calendar, MapPin, DollarSign, Image, Save, Video, ArrowLeft, Shield, UserCheck, Loader2, Armchair, Mic, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ const EditEventPage = () => {
 
   const fetchEventData = useCallback(async () => {
     setLoading(true);
-    const { data: eventData, error: eventError } = await supabase
+    const { data: eventData, error: eventError } = await backendClient
       .from('events')
       .select('*')
       .eq('id', eventId)
@@ -53,7 +53,7 @@ const EditEventPage = () => {
         time: eventDate.toTimeString().slice(0, 5),
     });
 
-    const { data: speakerData, error: speakerError } = await supabase
+    const { data: speakerData, error: speakerError } = await backendClient
         .from('speakers')
         .select('profiles:user_id(id, name, profile_picture_url)')
         .eq('event_id', eventId);
@@ -93,7 +93,7 @@ const EditEventPage = () => {
       setSpeakerSearchResults([]);
       return;
     }
-    const { data, error } = await supabase
+    const { data, error } = await backendClient
       .from('profiles')
       .select('id, name, profile_picture_url')
       .eq('role', 'Speaker')
@@ -134,7 +134,7 @@ const EditEventPage = () => {
         filePath = fileName;
       }
       
-      let { error: uploadError } = await supabase.storage
+      let { error: uploadError } = await backendClient.storage
           .from(bucket)
           .upload(filePath, file);
 
@@ -145,7 +145,7 @@ const EditEventPage = () => {
           return null;
       }
 
-      const { data } = supabase.storage
+      const { data } = backendClient.storage
           .from(bucket)
           .getPublicUrl(filePath);
 
@@ -176,7 +176,7 @@ const EditEventPage = () => {
         seating_cols: formData.seating_chart_enabled ? parseInt(formData.seating_cols) : null,
     };
 
-    const { error: eventError } = await supabase
+    const { error: eventError } = await backendClient
         .from('events')
         .update(updatedEvent)
         .eq('id', eventId);
@@ -187,7 +187,7 @@ const EditEventPage = () => {
         return;
     }
 
-    const { data: existingSpeakers } = await supabase.from('speakers').select('user_id').eq('event_id', eventId);
+    const { data: existingSpeakers } = await backendClient.from('speakers').select('user_id').eq('event_id', eventId);
     const existingSpeakerIds = existingSpeakers.map(s => s.user_id);
     const newSpeakerIds = speakers.map(s => s.id);
 
@@ -196,11 +196,11 @@ const EditEventPage = () => {
 
     if (speakersToAdd.length > 0) {
         const recordsToAdd = speakersToAdd.map(id => ({ event_id: eventId, user_id: id }));
-        await supabase.from('speakers').insert(recordsToAdd);
+        await backendClient.from('speakers').insert(recordsToAdd);
     }
 
     if (speakersToRemove.length > 0) {
-        await supabase.from('speakers').delete().eq('event_id', eventId).in('user_id', speakersToRemove);
+        await backendClient.from('speakers').delete().eq('event_id', eventId).in('user_id', speakersToRemove);
     }
 
     setSaving(false);

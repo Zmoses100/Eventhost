@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 
 export const useRealtime = (eventId, user) => {
     const [isLive, setIsLive] = useState(false);
@@ -19,11 +19,11 @@ export const useRealtime = (eventId, user) => {
     const setupRealtimeSubscriptions = useCallback(() => {
         if (realtimeChannel.current) return;
 
-        realtimeChannel.current = supabase.channel(`virtual-event:${eventId}`);
+        realtimeChannel.current = backendClient.channel(`virtual-event:${eventId}`);
 
         const setupTableSubscription = (table, stateSetter, orderBy = 'created_at') => {
             const fetchAndSet = async () => {
-                const { data, error } = await supabase.from(table).select('*').eq('event_id', eventId).order(orderBy, { ascending: true });
+                const { data, error } = await backendClient.from(table).select('*').eq('event_id', eventId).order(orderBy, { ascending: true });
                 if (!error) stateSetter(data || []);
             };
             fetchAndSet();
@@ -50,14 +50,14 @@ export const useRealtime = (eventId, user) => {
         if (!eventId || !user) return;
         
         const init = async () => {
-            const { data: initialState, error: initialStateError } = await supabase.from('virtual_event_state').select('*').eq('event_id', eventId).single();
+            const { data: initialState, error: initialStateError } = await backendClient.from('virtual_event_state').select('*').eq('event_id', eventId).single();
             if (initialState) {
                  setIsLive(initialState.is_live);
                  setCurrentScene(initialState.current_scene);
                  setLowerThird(initialState.lower_third);
             } else if (initialStateError && initialStateError.code === 'PGRST116') {
                  const defaultState = { event_id: eventId, is_live: false, current_scene: 'welcome', lower_third: {} };
-                 await supabase.from('virtual_event_state').insert(defaultState);
+                 await backendClient.from('virtual_event_state').insert(defaultState);
                  setIsLive(defaultState.is_live);
                  setCurrentScene(defaultState.current_scene);
                  setLowerThird(defaultState.lower_third);
@@ -68,14 +68,14 @@ export const useRealtime = (eventId, user) => {
 
         return () => {
             if (realtimeChannel.current) {
-                supabase.removeChannel(realtimeChannel.current);
+                backendClient.removeChannel(realtimeChannel.current);
                 realtimeChannel.current = null;
             }
         };
     }, [eventId, user, setupRealtimeSubscriptions]);
 
     const updateEventState = async (newState) => {
-        const { error } = await supabase.from('virtual_event_state').upsert({ event_id: eventId, ...newState }, { onConflict: 'event_id' });
+        const { error } = await backendClient.from('virtual_event_state').upsert({ event_id: eventId, ...newState }, { onConflict: 'event_id' });
         if(error) {
             console.error("Update failed:", error);
         }

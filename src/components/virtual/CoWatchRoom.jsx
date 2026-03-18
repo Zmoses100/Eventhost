@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Video, Mic, VideoOff, MicOff, UserPlus, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/context/SupabaseAuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import 'webrtc-adapter';
 
 const ParticipantVideo = ({ participant, isLocal = false }) => {
@@ -107,7 +107,7 @@ const CoWatchRoom = ({ open, onOpenChange, mainStream }) => {
   }, [mainStream, open]);
   
   const handleInvite = async () => {
-    const { data: invitedUser, error } = await supabase
+    const { data: invitedUser, error } = await backendClient
         .from('profiles')
         .select('id, name, email')
         .eq('email', inviteEmail)

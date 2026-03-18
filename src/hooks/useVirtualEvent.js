@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { useAuth } from '@/context/SupabaseAuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { useRealtime } from '@/hooks/useRealtime';
@@ -77,7 +77,7 @@ export const useVirtualEvent = () => {
 
     const fetchEvent = useCallback(async () => {
         setLoading(true);
-        const { data, error } = await supabase
+        const { data, error } = await backendClient
             .from('events')
             .select(`
                 *,
@@ -99,7 +99,7 @@ export const useVirtualEvent = () => {
         const canControl = isOrganizer || isSpeaker;
         setCanControlEvent(canControl);
         
-        const { data: stateData } = await supabase.from('virtual_event_state').select('*').eq('event_id', eventId).single();
+        const { data: stateData } = await backendClient.from('virtual_event_state').select('*').eq('event_id', eventId).single();
         if (stateData) {
             onStateChange(stateData);
         }
@@ -165,7 +165,7 @@ export const useVirtualEvent = () => {
     };
 
     const handleRaiseHand = async () => {
-        const { error } = await supabase.from('raised_hands').insert({
+        const { error } = await backendClient.from('raised_hands').insert({
             event_id: eventId,
             user_id: user.id,
             user_name: userProfile.name || user.email
@@ -181,13 +181,13 @@ export const useVirtualEvent = () => {
             return;
         }
         
-        const { error } = await supabase.from('raised_hands').delete().match({ event_id: eventId, user_id: idToClear });
+        const { error } = await backendClient.from('raised_hands').delete().match({ event_id: eventId, user_id: idToClear });
         if (error) toast({ title: 'Error lowering hand', description: error.message, variant: 'destructive'});
     };
 
 
     const handleSendReaction = async (reactionType) => {
-        await supabase.from('reactions').insert({ event_id: eventId, reaction_type: reactionType });
+        await backendClient.from('reactions').insert({ event_id: eventId, reaction_type: reactionType });
     };
 
     const eventActions = useEventActions(eventId, user, userProfile, fetchEvent);

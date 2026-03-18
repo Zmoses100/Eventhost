@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { useAuth } from '@/context/SupabaseAuthContext';
 import { Calendar, MapPin, Users, DollarSign, Image, Save, Armchair, Video, Key, Repeat, Tag, Mic, Clock, PlusCircle, Trash2, Shield, UserCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -61,7 +61,7 @@ const CreateEventPage = () => {
       setSpeakerSearchResults([]);
       return;
     }
-    const { data, error } = await supabase
+    const { data, error } = await backendClient
       .from('profiles')
       .select('id, name, profile_picture_url')
       .eq('role', 'Speaker')
@@ -102,7 +102,7 @@ const CreateEventPage = () => {
         filePath = fileName;
       }
       
-      let { error: uploadError } = await supabase.storage
+      let { error: uploadError } = await backendClient.storage
           .from(bucket)
           .upload(filePath, file);
 
@@ -113,7 +113,7 @@ const CreateEventPage = () => {
           return null;
       }
 
-      const { data } = supabase.storage
+      const { data } = backendClient.storage
           .from(bucket)
           .getPublicUrl(filePath);
 
@@ -148,7 +148,7 @@ const CreateEventPage = () => {
         status: 'Approved', // Or 'Pending' for review process
     };
 
-    const { data: eventData, error: eventError } = await supabase
+    const { data: eventData, error: eventError } = await backendClient
         .from('events')
         .insert([newEvent])
         .select()
@@ -166,7 +166,7 @@ const CreateEventPage = () => {
         event_id: eventData.id,
         user_id: speaker.id
       }));
-      const { error: speakerError } = await supabase.from('speakers').insert(speakerRecords);
+      const { error: speakerError } = await backendClient.from('speakers').insert(speakerRecords);
       if (speakerError) {
         setLoading(false);
         toast({ title: "Failed to add speakers", description: speakerError.message, variant: "destructive" });

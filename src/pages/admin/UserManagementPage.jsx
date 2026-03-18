@@ -36,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import ManageUserCredentialsDialog from '@/components/admin/ManageUserCredentialsDialog';
 
 const UserForm = ({ user, onSave, onCancel, saving }) => {
@@ -147,7 +147,7 @@ const AdminUserManagementPage = () => {
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    const { data, error } = await backendClient.from('profiles').select('*').order('created_at', { ascending: false });
     if (error) {
       toast({ title: "Error fetching users", description: error.message, variant: "destructive" });
     } else {
@@ -163,7 +163,7 @@ const AdminUserManagementPage = () => {
   const handleSaveUser = async (userData) => {
     setSaving(true);
     if (editingUser) {
-      const { data, error } = await supabase
+      const { data, error } = await backendClient
         .from('profiles')
         .update({ name: userData.name, role: userData.role, status: userData.status })
         .eq('id', editingUser.id)
@@ -178,7 +178,7 @@ const AdminUserManagementPage = () => {
         setEditingUser(null);
       }
     } else {
-      const { error, data } = await supabase.auth.signUp({
+      const { error, data } = await backendClient.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: {
@@ -208,7 +208,7 @@ const AdminUserManagementPage = () => {
   };
   
   const handleDeleteUser = async (userId) => {
-    const { error } = await supabase.from('profiles').delete().eq('id', userId);
+    const { error } = await backendClient.from('profiles').delete().eq('id', userId);
     if (error) {
       toast({ title: 'Delete Failed', description: error.message, variant: 'destructive' });
     } else {

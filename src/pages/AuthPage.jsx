@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/SupabaseAuthContext';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 
@@ -83,7 +83,7 @@ const AuthPage = () => {
             return;
         }
         setLoading(true);
-        const { error, data } = await supabase.auth.resetPasswordForEmail(loginEmail);
+        const { error, data } = await backendClient.auth.resetPasswordForEmail(loginEmail);
         if (error) {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         } else {
@@ -99,7 +99,7 @@ const AuthPage = () => {
             return;
         }
         setLoading(true);
-        const { error, data } = await supabase.auth.resendVerificationEmail(emailToUse);
+        const { error, data } = await backendClient.auth.resendVerificationEmail(emailToUse);
         if (error) {
             toast({ title: 'Could not resend verification', description: error.message, variant: 'destructive' });
         } else {
@@ -120,7 +120,7 @@ const AuthPage = () => {
             return;
         }
         setLoading(true);
-        const { error } = await supabase.auth.completePasswordReset({ token: resetToken, password: newPassword });
+        const { error } = await backendClient.auth.completePasswordReset({ token: resetToken, password: newPassword });
         if (error) {
             toast({ title: 'Reset failed', description: error.message, variant: 'destructive' });
         } else {
@@ -137,7 +137,7 @@ const AuthPage = () => {
             if (!verifyToken || verifiedTokenRef.current === verifyToken) return;
             verifiedTokenRef.current = verifyToken;
             setIsVerifying(true);
-            const { error } = await supabase.auth.verifyEmail(verifyToken);
+            const { error } = await backendClient.auth.verifyEmail(verifyToken);
             if (error) {
                 toast({ title: 'Verification failed', description: error.message, variant: 'destructive' });
             } else {

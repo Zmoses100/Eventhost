@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { v4 as uuidv4 } from 'uuid';
 import { X } from 'lucide-react';
 import { useAuth } from '@/context/SupabaseAuthContext';
@@ -17,7 +17,7 @@ const ManageSponsorsDialog = ({ open, onOpenChange, event }) => {
     const logoInputRef = useRef(null);
   
     const fetchSponsors = async () => {
-      const { data, error } = await supabase.from('sponsors').select('*').eq('event_id', event.id);
+      const { data, error } = await backendClient.from('sponsors').select('*').eq('event_id', event.id);
       if (error) toast({ title: 'Error fetching sponsors', description: error.message, variant: 'destructive' });
       else setSponsors(data);
     };
@@ -34,12 +34,12 @@ const ManageSponsorsDialog = ({ open, onOpenChange, event }) => {
         return;
       }
       const fileName = `${user.id}/sponsors/${uuidv4()}-${file.name}`;
-      const { error } = await supabase.storage.from('brand_logos').upload(fileName, file);
+      const { error } = await backendClient.storage.from('brand_logos').upload(fileName, file);
       if (error) {
         toast({ title: 'Logo upload failed', description: error.message, variant: 'destructive' });
         return;
       }
-      const { data: { publicUrl } } = supabase.storage.from('brand_logos').getPublicUrl(fileName);
+      const { data: { publicUrl } } = backendClient.storage.from('brand_logos').getPublicUrl(fileName);
       setLogoUrl(publicUrl);
       toast({ title: 'Logo uploaded successfully!' });
     };
@@ -49,7 +49,7 @@ const ManageSponsorsDialog = ({ open, onOpenChange, event }) => {
         toast({ title: 'Sponsor name is required', variant: 'destructive' });
         return;
       }
-      const { error } = await supabase.from('sponsors').insert({
+      const { error } = await backendClient.from('sponsors').insert({
         event_id: event.id,
         name,
         logo_url: logoUrl,
@@ -64,7 +64,7 @@ const ManageSponsorsDialog = ({ open, onOpenChange, event }) => {
     };
   
     const handleRemoveSponsor = async (sponsorId) => {
-      const { error } = await supabase.from('sponsors').delete().eq('id', sponsorId);
+      const { error } = await backendClient.from('sponsors').delete().eq('id', sponsorId);
       if (error) toast({ title: 'Failed to remove sponsor', description: error.message, variant: 'destructive' });
       else {
         toast({ title: 'Sponsor removed' });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/SupabaseAuthContext';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,7 +26,7 @@ const AnalyticsPage = () => {
     if (!user) return;
     setLoading(true);
 
-    const { data: events, error: eventsError } = await supabase
+    const { data: events, error: eventsError } = await backendClient
       .from('events')
       .select('id')
       .eq('organizer_id', user.id);
@@ -43,7 +43,7 @@ const AnalyticsPage = () => {
     }
     
     const eventIds = events.map(e => e.id);
-    const { data: tickets, error: ticketsError } = await supabase
+    const { data: tickets, error: ticketsError } = await backendClient
       .from('tickets')
       .select('*, events(title)')
       .in('event_id', eventIds)
@@ -76,7 +76,7 @@ const AnalyticsPage = () => {
           };
       });
 
-    const { data: attendeeData, error: attendeeError } = await supabase
+    const { data: attendeeData, error: attendeeError } = await backendClient
       .from('tickets')
       .select('profiles:user_id(id, name), user_id')
       .in('event_id', eventIds)
@@ -86,7 +86,7 @@ const AnalyticsPage = () => {
       toast({ title: "Error fetching attendees", description: attendeeError.message, variant: "destructive" });
     } else if (attendeeData) {
       const userIds = [...new Set(attendeeData.map(a => a.user_id))];
-      const { data: usersData, error: usersError } = await supabase.rpc('get_user_emails', { user_ids: userIds });
+      const { data: usersData, error: usersError } = await backendClient.rpc('get_user_emails', { user_ids: userIds });
 
       if (usersError) {
         toast({ title: "Error fetching user emails", description: usersError.message, variant: "destructive" });

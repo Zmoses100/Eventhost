@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 
 const ChapterItem = ({ chapter, onSelect }) => (
   <button
@@ -27,7 +27,7 @@ const ViewChapters = ({ eventId, onSeek }) => {
   useEffect(() => {
     if (isOpen) {
       const fetchChapters = async () => {
-        const { data, error } = await supabase
+        const { data, error } = await backendClient
           .from('chapters')
           .select('*')
           .eq('event_id', eventId)

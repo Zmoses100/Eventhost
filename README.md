@@ -42,7 +42,8 @@ This keeps the existing React UI/UX intact while replacing Supabase with self-ma
 ```text
 .
 ├── src/
-│   └── lib/customSupabaseClient.js   # compatibility client to new backend API
+│   ├── lib/customSupabaseClient.js   # legacy compatibility client
+│   └── lib/backendClient.js          # app-facing backend client alias
 ├── server/
 │   ├── index.js                      # Express backend
 │   ├── lib/db.js                     # file-db utilities

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
+import { backendClient } from '@/lib/backendClient';
 import { useAuth } from '@/context/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,7 +55,7 @@ const EventDetailsPage = () => {
   const fetchEventData = useCallback(async () => {
     setLoading(true);
     
-    const { data: eventData, error: eventError } = await supabase
+    const { data: eventData, error: eventError } = await backendClient
       .from('events')
       .select('*, profiles(*)')
       .eq('id', id)
@@ -70,7 +70,7 @@ const EventDetailsPage = () => {
     setEvent(eventData);
     setOrganizer(eventData.profiles);
 
-    const { data: ttData, error: ttError } = await supabase
+    const { data: ttData, error: ttError } = await backendClient
       .from('ticket_types')
       .select('*')
       .eq('event_id', id);
@@ -80,7 +80,7 @@ const EventDetailsPage = () => {
     }
     
     if (user) {
-      const { data: ticketData } = await supabase
+      const { data: ticketData } = await backendClient
         .from('tickets')
         .select('*')
         .eq('event_id', id)

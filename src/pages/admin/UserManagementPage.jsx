@@ -178,7 +178,7 @@ const AdminUserManagementPage = () => {
         setEditingUser(null);
       }
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: {
@@ -192,7 +192,14 @@ const AdminUserManagementPage = () => {
       if (error) {
         toast({ title: 'User Creation Failed', description: error.message, variant: 'destructive' });
       } else {
-        toast({ title: 'User Added', description: 'New user has been created. They will need to confirm their email.' });
+        const warning = data?.meta?.warnings?.[0];
+        toast({
+          title: 'User Added',
+          description: warning || (data?.meta?.requires_email_verification
+            ? 'New user created. A verification email was sent if email delivery is configured.'
+            : 'New user has been created successfully.'),
+          variant: warning ? 'destructive' : 'default',
+        });
         fetchUsers();
         setIsFormOpen(false);
       }

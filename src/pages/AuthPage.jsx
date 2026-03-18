@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,8 +16,15 @@ const AuthPage = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const defaultTab = searchParams.get('tab') || 'login';
-    const { signIn, signUp, profile } = useAuth();
+    const verifyToken = searchParams.get('verify_token') || '';
+    const resetToken = searchParams.get('reset_token') || '';
+    const { signIn, signUp } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
+    const verifiedTokenRef = useRef('');
+    const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
 
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
@@ -44,12 +51,23 @@ const AuthPage = () => {
             toast({ title: "Registration Failed", description: "Please fill out all fields.", variant: "destructive" });
             return;
         }
+        if (registerPassword.length < 6) {
+            toast({ title: "Registration Failed", description: "Password must be at least 6 characters.", variant: "destructive" });
+            return;
+        }
         setLoading(true);
-        const { error } = await signUp(registerEmail, registerPassword, {
+        const { error, data } = await signUp(registerEmail, registerPassword, {
             data: { name: registerName, role: role }
         });
         if (!error) {
-            toast({ title: "Registration Successful!", description: "Please check your email to verify your account." });
+            const warningMessage = data?.meta?.warnings?.[0];
+            const description = data?.meta?.requires_email_verification
+                ? (data?.meta?.verification_email_sent
+                    ? "Please check your email to verify your account."
+                    : (warningMessage || "Your account was created, but verification email could not be sent right now."))
+                : "Your account has been created successfully.";
+            toast({ title: "Registration Successful!", description, variant: warningMessage ? "destructive" : "default" });
+            setPendingVerificationEmail(registerEmail);
             setRegisterName('');
             setRegisterEmail('');
             setRegisterPassword('');
@@ -65,16 +83,71 @@ const AuthPage = () => {
             return;
         }
         setLoading(true);
-        const { error } = await supabase.auth.resetPasswordForEmail(loginEmail, {
-            redirectTo: `${window.location.origin}/profile`,
-        });
+        const { error, data } = await supabase.auth.resetPasswordForEmail(loginEmail);
         if (error) {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         } else {
-            toast({ title: 'Password Reset Email Sent', description: 'Check your inbox for a link to reset your password.' });
+            toast({ title: 'Password Reset', description: data?.diagnostic || 'If your account exists, check your inbox for a reset link.' });
         }
         setLoading(false);
     };
+
+    const handleResendVerification = async () => {
+        const emailToUse = (pendingVerificationEmail || loginEmail).trim();
+        if (!emailToUse) {
+            toast({ title: 'Email required', description: 'Enter your account email first.', variant: 'destructive' });
+            return;
+        }
+        setLoading(true);
+        const { error, data } = await supabase.auth.resendVerificationEmail(emailToUse);
+        if (error) {
+            toast({ title: 'Could not resend verification', description: error.message, variant: 'destructive' });
+        } else {
+            toast({ title: 'Verification Email', description: data?.message || 'If your account requires verification, an email has been sent.' });
+        }
+        setLoading(false);
+    };
+
+    const handleCompletePasswordReset = async (e) => {
+        e.preventDefault();
+        if (!resetToken) return;
+        if (!newPassword || newPassword.length < 6) {
+            toast({ title: 'Invalid password', description: 'Password must be at least 6 characters.', variant: 'destructive' });
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            toast({ title: 'Passwords do not match', description: 'Please re-enter your new password.', variant: 'destructive' });
+            return;
+        }
+        setLoading(true);
+        const { error } = await supabase.auth.completePasswordReset({ token: resetToken, password: newPassword });
+        if (error) {
+            toast({ title: 'Reset failed', description: error.message, variant: 'destructive' });
+        } else {
+            toast({ title: 'Password updated', description: 'You can now log in with your new password.' });
+            setNewPassword('');
+            setConfirmPassword('');
+            navigate('/auth?tab=login');
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        const runVerification = async () => {
+            if (!verifyToken || verifiedTokenRef.current === verifyToken) return;
+            verifiedTokenRef.current = verifyToken;
+            setIsVerifying(true);
+            const { error } = await supabase.auth.verifyEmail(verifyToken);
+            if (error) {
+                toast({ title: 'Verification failed', description: error.message, variant: 'destructive' });
+            } else {
+                toast({ title: 'Email verified', description: 'Your account is now verified and signed in.' });
+                navigate('/dashboard');
+            }
+            setIsVerifying(false);
+        };
+        runVerification();
+    }, [verifyToken, navigate]);
 
     return (
         <div className="pt-24 pb-12 px-4 min-h-screen flex items-center justify-center">
@@ -93,7 +166,17 @@ const AuthPage = () => {
                                     <div className="space-y-2"><Label htmlFor="login-password" className="text-white">Password</Label><Input id="login-password" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="bg-white/10 border-white/20 text-white" placeholder="••••••••" /></div>
                                     <Button type="submit" className="w-full bg-white text-purple-600 hover:bg-white/90" disabled={loading}>{loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} {loading ? 'Logging in...' : 'Login'}</Button>
                                     <Button type="button" variant="link" className="w-full text-white/70" onClick={handlePasswordReset}>Forgot your password?</Button>
+                                    <Button type="button" variant="link" className="w-full text-white/70" onClick={handleResendVerification}>Resend verification email</Button>
                                 </form>
+                                {resetToken ? (
+                                    <form onSubmit={handleCompletePasswordReset} className="space-y-4 mt-6 border-t border-white/10 pt-6">
+                                        <p className="text-sm text-white/80">Set a new password for your account.</p>
+                                        <div className="space-y-2"><Label htmlFor="new-password" className="text-white">New Password</Label><Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required className="bg-white/10 border-white/20 text-white" /></div>
+                                        <div className="space-y-2"><Label htmlFor="confirm-password" className="text-white">Confirm Password</Label><Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="bg-white/10 border-white/20 text-white" /></div>
+                                        <Button type="submit" className="w-full bg-white text-purple-600 hover:bg-white/90" disabled={loading}>{loading ? 'Updating...' : 'Update Password'}</Button>
+                                    </form>
+                                ) : null}
+                                {isVerifying ? <p className="text-sm text-white/70 mt-4">Verifying your email...</p> : null}
                             </CardContent>
                         </Card>
                     </TabsContent>

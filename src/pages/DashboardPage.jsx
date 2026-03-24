@@ -192,10 +192,10 @@ const AttendeeDashboard = ({ user, profile }) => {
 
                   return (
                     <Card key={ticket.id} className="bg-white/5 border-white/10 flex flex-col justify-between">
-                      <CardHeader><CardTitle className="text-white">{ticket.events.title}</CardTitle></CardHeader>
+                      <CardHeader><CardTitle className="text-white">{ticket.events?.title || 'Untitled Event'}</CardTitle></CardHeader>
                       <CardContent>
-                        <p className="text-white/80">Date: {new Date(ticket.events.date).toLocaleDateString()}</p>
-                        <p className="text-white/80">Location: {ticket.events.location || "Online"}</p>
+                        <p className="text-white/80">Date: {ticket.events?.date ? new Date(ticket.events.date).toLocaleDateString() : 'TBD'}</p>
+                        <p className="text-white/80">Location: {ticket.events?.location || "Online"}</p>
                         <p className="text-white/80">Status: <span className={`font-semibold ${statusInfo.color}`}>{statusInfo.text}</span></p>
 
                         {ticket.status === 'Pending Confirmation' && ticket.payment_provider === 'Bank Transfer' && (
@@ -206,7 +206,7 @@ const AttendeeDashboard = ({ user, profile }) => {
                         )}
                       </CardContent>
                       <div className="p-6 pt-0 mt-auto">
-                        <Link to={`/event/${ticket.events.id}`}><Button variant="outline" className="w-full mt-4 bg-white/10 text-white border-white/20 hover:bg-white/20">View Event</Button></Link>
+                        <Link to={`/event/${ticket.events?.id || ticket.event_id}`}><Button variant="outline" className="w-full mt-4 bg-white/10 text-white border-white/20 hover:bg-white/20">View Event</Button></Link>
                          {showUploadProof ? (
                             <UploadProofDialog ticket={ticket} onUploadSuccess={fetchTickets} />
                          ) : ticket.payment_proof_url && ticket.status === 'Pending Confirmation' ? (

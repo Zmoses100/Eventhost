@@ -61,7 +61,7 @@ const EditEventPage = () => {
     if (speakerError) {
         toast({ title: "Failed to load speakers", variant: "destructive", description: speakerError.message });
     } else {
-        setSpeakers(speakerData.map(s => s.profiles));
+        setSpeakers(speakerData.map(s => s.profiles).filter(Boolean));
     }
 
 

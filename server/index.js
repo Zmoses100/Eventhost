@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import path from 'node:path';
 import { randomUUID, createHash, createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
@@ -14,6 +15,7 @@ const PORT = Number(process.env.PORT || 4000);
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
 const API_ORIGIN = process.env.API_ORIGIN || '*';
 const uploadRoot = path.resolve(process.cwd(), 'server/uploads');
+const distRoot = path.resolve(process.cwd(), 'dist');
 
 app.use(cors({ origin: API_ORIGIN === '*' ? true : API_ORIGIN.split(','), credentials: true }));
 app.use(express.json({ limit: '20mb' }));
@@ -437,6 +439,13 @@ const adminEmailRateLimit = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { error: { message: 'Too many requests. Please try again shortly.' } },
+});
+
+const spaRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 300,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
 });
 
 app.get('/api/health', async (_req, res) => {
@@ -1188,6 +1197,14 @@ app.use((error, _req, res, _next) => {
   console.error(error);
   res.status(500).json({ error: { message: 'Internal server error.' } });
 });
+
+// Serve the built frontend in production
+if (fsSync.existsSync(distRoot)) {
+  app.use(express.static(distRoot));
+  app.get(/^(?!\/api|\/uploads)/, spaRateLimit, (_req, res) => {
+    res.sendFile(path.join(distRoot, 'index.html'));
+  });
+}
 
 ensureDb().then(async () => {
   await hydrateEmailSettingsFromEnv();

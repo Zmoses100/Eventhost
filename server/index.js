@@ -31,6 +31,7 @@ const EMAIL_ENCRYPTION_SECRET = process.env.EMAIL_SETTINGS_ENCRYPTION_KEY || JWT
 const EMAIL_ENCRYPTION_KEY = createHash('sha256').update(String(EMAIL_ENCRYPTION_SECRET)).digest();
 const EMAIL_ADDRESS_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ALLOWED_ROLES = new Set(['Attendee', 'Event Organizer', 'Speaker']);
+const SUPER_ADMIN_ROLE = 'Super Admin';
 const getBool = (value, fallback = false) => {
   if (value === undefined || value === null || value === '') return fallback;
   if (typeof value === 'boolean') return value;
@@ -1122,7 +1123,7 @@ app.post('/api/functions/:name', requireAuth(async (req, res) => {
   if (name === 'update-user-by-admin') {
     const db = await readDb();
     const callerProfile = getTable(db, 'profiles').find((p) => p.id === req.auth.user.id);
-    if (!callerProfile || callerProfile.role !== 'Super Admin') {
+    if (!callerProfile || callerProfile.role !== SUPER_ADMIN_ROLE) {
       res.status(403).json({ error: { message: 'Only administrators can update other users.' } });
       return;
     }
@@ -1157,13 +1158,13 @@ app.post('/api/storage/upload', requireAuth(async (req, res) => {
   }
 
   const safeBucket = path.basename(bucket);
-  const safePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/g, '');
-  const bucketDir = path.join(uploadRoot, safeBucket);
-  const destination = path.resolve(bucketDir, safePath);
+  const bucketDir = path.resolve(uploadRoot, safeBucket);
+  const destination = path.resolve(bucketDir, path.normalize(relativePath));
   if (!destination.startsWith(bucketDir)) {
     res.status(400).json({ error: { message: 'Invalid file path.' } });
     return;
   }
+  const safePath = path.relative(bucketDir, destination);
 
   await fs.mkdir(path.dirname(destination), { recursive: true });
 

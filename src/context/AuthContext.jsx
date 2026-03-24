@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }) => {
 
 
   const signUp = useCallback(async (email, password, options) => {
-    const { error } = await backendClient.auth.signUp({
+    const { data, error } = await backendClient.auth.signUp({
       email,
       password,
       options,
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }) => {
       });
     }
 
-    return { error };
+    return { data, error };
   }, [toast]);
 
   const signIn = useCallback(async (email, password) => {

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/context/SupabaseAuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { backendClient } from '@/lib/backendClient';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,7 +40,7 @@ const AuthPage = () => {
         const { error, data } = await signIn(loginEmail, loginPassword);
         if (!error && data.user) {
             toast({ title: "Login Successful!", description: "Welcome back! Redirecting..." });
-            // Redirection is now handled by SupabaseAuthContext
+            // Redirection is now handled by AuthContext
         }
         setLoading(false);
     };

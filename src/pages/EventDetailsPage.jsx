@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { backendClient } from '@/lib/backendClient';
-import { useAuth } from '@/context/SupabaseAuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, MapPin, DollarSign, Ticket, Loader2, Share2, Bookmark, Video, Armchair, Tv, Edit, Shield } from 'lucide-react';

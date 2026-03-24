@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Video, Mic, VideoOff, MicOff, UserPlus, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { useAuth } from '@/context/SupabaseAuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { backendClient } from '@/lib/backendClient';
 import 'webrtc-adapter';
 

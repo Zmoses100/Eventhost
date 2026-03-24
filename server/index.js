@@ -31,6 +31,7 @@ const EMAIL_ENCRYPTION_SECRET = process.env.EMAIL_SETTINGS_ENCRYPTION_KEY || JWT
 const EMAIL_ENCRYPTION_KEY = createHash('sha256').update(String(EMAIL_ENCRYPTION_SECRET)).digest();
 const EMAIL_ADDRESS_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ALLOWED_ROLES = new Set(['Attendee', 'Event Organizer', 'Speaker']);
+const SUPER_ADMIN_ROLE = 'Super Admin';
 const getBool = (value, fallback = false) => {
   if (value === undefined || value === null || value === '') return fallback;
   if (typeof value === 'boolean') return value;
@@ -178,22 +179,32 @@ function buildTransport(settings) {
 
 async function sendSystemEmail(db, payload) {
   const settings = getEmailSettings(db);
-  if (!settings.enabled) return { sent: false, skipped: true, reason: 'Email sending is disabled.' };
-  const transport = buildTransport(settings);
-  const info = await transport.sendMail({
-    from: settings.fromName ? `"${settings.fromName}" <${settings.fromEmail}>` : settings.fromEmail,
-    replyTo: settings.replyToEmail || undefined,
-    to: payload.to,
-    subject: payload.subject,
-    text: payload.text,
-    html: payload.html,
-  });
-  setSetting(db, EMAIL_DIAGNOSTIC_KEY, {
-    lastSuccessAt: nowIso(),
-    lastErrorAt: null,
-    lastError: '',
-  });
-  return { sent: true, messageId: info.messageId };
+  if (!settings.enabled) {
+    console.warn('[email] Skipped (disabled): to=%s subject=%s', payload.to, payload.subject);
+    return { sent: false, skipped: true, reason: 'Email sending is disabled.' };
+  }
+  try {
+    const transport = buildTransport(settings);
+    const info = await transport.sendMail({
+      from: settings.fromName ? `"${settings.fromName}" <${settings.fromEmail}>` : settings.fromEmail,
+      replyTo: settings.replyToEmail || undefined,
+      to: payload.to,
+      subject: payload.subject,
+      text: payload.text,
+      html: payload.html,
+    });
+    console.log('[email] Sent successfully: to=%s messageId=%s', payload.to, info.messageId);
+    setSetting(db, EMAIL_DIAGNOSTIC_KEY, {
+      lastSuccessAt: nowIso(),
+      lastErrorAt: null,
+      lastError: '',
+    });
+    return { sent: true, messageId: info.messageId };
+  } catch (sendError) {
+    console.error('[email] Send failed: to=%s error=%s', payload.to, sendError.message);
+    markEmailFailure(db, sendError.message);
+    throw sendError;
+  }
 }
 
 function markEmailFailure(db, message) {
@@ -1111,6 +1122,11 @@ app.post('/api/functions/:name', requireAuth(async (req, res) => {
 
   if (name === 'update-user-by-admin') {
     const db = await readDb();
+    const callerProfile = getTable(db, 'profiles').find((p) => p.id === req.auth.user.id);
+    if (!callerProfile || callerProfile.role !== SUPER_ADMIN_ROLE) {
+      res.status(403).json({ error: { message: 'Only super administrators can update other users.' } });
+      return;
+    }
     const users = getTable(db, 'users');
     const profiles = getTable(db, 'profiles');
     const userId = payload?.userId;
@@ -1141,15 +1157,22 @@ app.post('/api/storage/upload', requireAuth(async (req, res) => {
     return;
   }
 
-  const bucketDir = path.join(uploadRoot, bucket);
-  const destination = path.join(bucketDir, relativePath);
+  const safeBucket = path.basename(bucket);
+  const bucketDir = path.resolve(uploadRoot, safeBucket);
+  const destination = path.resolve(bucketDir, path.normalize(relativePath));
+  if (!destination.startsWith(bucketDir)) {
+    res.status(400).json({ error: { message: 'Invalid file path.' } });
+    return;
+  }
+  const safePath = path.relative(bucketDir, destination).split(path.sep).join('/');
+
   await fs.mkdir(path.dirname(destination), { recursive: true });
 
   const base64 = String(content).includes(',') ? String(content).split(',').pop() : String(content);
   await fs.writeFile(destination, Buffer.from(base64, 'base64'));
 
-  const publicUrl = `/uploads/${bucket}/${relativePath}`;
-  res.json({ data: { path: relativePath, fileName, contentType, publicUrl }, error: null });
+  const publicUrl = `/uploads/${safeBucket}/${safePath}`;
+  res.json({ data: { path: safePath, fileName, contentType, publicUrl }, error: null });
 }));
 
 app.get('/api/storage/public-url', (req, res) => {

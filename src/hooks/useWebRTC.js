@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { useAuth } from '@/context/SupabaseAuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 export const useWebRTC = (realtimeChannel, localStreamRef, mainVideoRef, user, canControlEvent) => {
     const peerConnections = useRef({});

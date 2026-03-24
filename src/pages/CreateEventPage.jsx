@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { backendClient } from '@/lib/backendClient';
-import { useAuth } from '@/context/SupabaseAuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { Calendar, MapPin, Users, DollarSign, Image, Save, Armchair, Video, Key, Repeat, Tag, Mic, Clock, PlusCircle, Trash2, Shield, UserCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

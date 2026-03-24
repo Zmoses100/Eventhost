@@ -23,7 +23,7 @@ import AdminSettingsPage from '@/pages/admin/SettingsPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import RoleBasedProtectedRoute from '@/components/RoleBasedProtectedRoute';
 import AuthPage from '@/pages/AuthPage';
-import { AuthProvider } from '@/context/SupabaseAuthContext';
+import { AuthProvider } from '@/context/AuthContext';
 import MessagesPage from '@/pages/MessagesPage';
 import PaymentSuccessPage from '@/pages/PaymentSuccessPage';
 import { Elements } from '@stripe/react-stripe-js';

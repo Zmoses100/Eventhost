@@ -30,11 +30,12 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
     
     const sendMessage = async (content) => {
+        if (!user?.id) return;
         const { error } = await backendClient.from('messages').insert({
             event_id: eventId,
             user_id: user.id,
-            user_name: userProfile.name || user.email,
-            role: userProfile.role,
+            user_name: userProfile?.name || user.email || 'Anonymous',
+            role: userProfile?.role || 'Attendee',
             text: content,
         });
         if(error) toast({ title: "Message send failed", description: error.message, variant: "destructive" });
@@ -50,7 +51,8 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
 
     const handleAskQuestion = async (question) => {
-        const { error } = await backendClient.from('qas').insert({ event_id: eventId, user_id: user.id, question, author_name: userProfile.name || user.email, votes: 0, is_answered: false });
+        if (!user?.id) return;
+        const { error } = await backendClient.from('qas').insert({ event_id: eventId, user_id: user.id, question, author_name: userProfile?.name || user.email || 'Anonymous', votes: 0, is_answered: false });
         if(error) toast({ title: 'Failed to ask question', description: error.message, variant: 'destructive' });
     };
 
@@ -92,9 +94,9 @@ export const useEventActions = (eventId, user, userProfile, onActionSuccess) => 
     };
 
     const handleAnswerQuiz = async (quizId, optionIndex, callback) => {
-        const { data: quiz, error } = await backendClient.from('quizzes').select('correct_option_index').eq('id', quizId).single();
-        if (error) {
-            toast({ title: "Couldn't verify answer", description: error.message, variant: "destructive" });
+        const { data: quiz, error } = await backendClient.from('quizzes').select('correct_option_index').eq('id', quizId).maybeSingle();
+        if (error || !quiz) {
+            toast({ title: "Couldn't verify answer", description: error?.message || 'Quiz not found', variant: "destructive" });
             return;
         }
         callback(quiz.correct_option_index === optionIndex);

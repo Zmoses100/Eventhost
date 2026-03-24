@@ -1124,7 +1124,7 @@ app.post('/api/functions/:name', requireAuth(async (req, res) => {
     const db = await readDb();
     const callerProfile = getTable(db, 'profiles').find((p) => p.id === req.auth.user.id);
     if (!callerProfile || callerProfile.role !== SUPER_ADMIN_ROLE) {
-      res.status(403).json({ error: { message: 'Only administrators can update other users.' } });
+      res.status(403).json({ error: { message: 'Only super administrators can update other users.' } });
       return;
     }
     const users = getTable(db, 'users');
@@ -1164,7 +1164,7 @@ app.post('/api/storage/upload', requireAuth(async (req, res) => {
     res.status(400).json({ error: { message: 'Invalid file path.' } });
     return;
   }
-  const safePath = path.relative(bucketDir, destination);
+  const safePath = path.relative(bucketDir, destination).split(path.sep).join('/');
 
   await fs.mkdir(path.dirname(destination), { recursive: true });
 

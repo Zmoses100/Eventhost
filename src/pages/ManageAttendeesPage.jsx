@@ -11,7 +11,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Loader2, ArrowLeft, Ticket, Send, PlusCircle, Trash2, UploadCloud, Image as ImageIcon } from 'lucide-react';
 import { Helmet } from 'react-helmet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuth } from '@/context/SupabaseAuthContext';
+import { useAuth } from '@/context/AuthContext';
 import {
   Dialog,
   DialogContent,

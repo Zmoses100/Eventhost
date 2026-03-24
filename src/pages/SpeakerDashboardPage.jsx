@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, User, Loader2, PlayCircle } from 'lucide-react';
-import { useAuth } from '@/context/SupabaseAuthContext';
+import { useAuth } from '@/context/AuthContext';
 import { Helmet } from 'react-helmet';
 import { backendClient } from '@/lib/backendClient';
 import { toast } from '@/components/ui/use-toast';

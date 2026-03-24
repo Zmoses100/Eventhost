@@ -6,7 +6,7 @@ import { toast } from '@/components/ui/use-toast';
 import { backendClient } from '@/lib/backendClient';
 import { v4 as uuidv4 } from 'uuid';
 import { X } from 'lucide-react';
-import { useAuth } from '@/context/SupabaseAuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 const ManageSponsorsDialog = ({ open, onOpenChange, event }) => {
     const { user } = useAuth();

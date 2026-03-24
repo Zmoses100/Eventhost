@@ -1,33 +1,24 @@
-# Eventhost (Supabase-free VPS Edition)
+# Eventhost (Self-Hosted VPS Edition)
 
-Eventhost is now structured to run fully on a self-hosted Hostinger VPS stack without Supabase.
+Eventhost is a full-stack event management platform built to run entirely on a self-hosted VPS (e.g. Hostinger) with no third-party backend dependencies.
 
-## 1) Audit Summary
+## 1) Architecture
 
 ### Framework and runtime
 - Frontend: **React 18 + Vite + Tailwind**
 - Router: **react-router-dom**
 - UI: Radix + custom components
-- Backend (new): **Node.js + Express API**
-- Data store (new): **self-hosted JSON DB file (`server/data/db.json`)** with SQL migration blueprint for PostgreSQL/MySQL in `server/migrations/001_init.sql`
+- Backend: **Node.js + Express API**
+- Data store: **self-hosted JSON DB file (`server/data/db.json`)** with SQL migration blueprint for PostgreSQL/MySQL in `server/migrations/001_init.sql`
 
-### What depended on Supabase
-- Auth/session in `src/context/SupabaseAuthContext.jsx`
-- DB queries across pages/hooks/components via `supabase.from(...)`
-- Storage uploads via `supabase.storage`
-- RPC + edge functions via `supabase.rpc(...)` and `supabase.functions.invoke(...)`
-- Realtime via `supabase.channel(...)`
-- Hardcoded credentials in `src/lib/customSupabaseClient.js`
+### Key capabilities
+- Auth/session via JWT + bcrypt password hashing
+- DB queries via Express API (`/api/query`)
+- Storage uploads via Express API (`/api/storage/upload`)
+- RPC + custom functions via Express API
+- In-app realtime channel bus for live event features
 
-### Broken/incomplete issues fixed by this migration
-- Removed exposed hardcoded Supabase URL/anon key
-- Removed direct Supabase SDK dependency
-- Added deployable backend API for auth, CRUD, storage, RPC/function equivalents
-- Added environment templates for frontend and backend
-- Added migration schema blueprint
-- Removed hardcoded Stripe test key fallback in app bootstrap
-
-## 2) Why this replacement stack
+## 2) Stack Details
 
 Chosen stack for Hostinger VPS:
 - **Node.js + Express**: stable, lightweight, easy to run behind Nginx + PM2
@@ -35,43 +26,33 @@ Chosen stack for Hostinger VPS:
 - **SQL schema file included**: `server/migrations/001_init.sql` to migrate to PostgreSQL/MySQL when scaling
 - **JWT + bcryptjs auth**: secure password hashing and stateless auth on VPS
 
-This keeps the existing React UI/UX intact while replacing Supabase with self-managed infrastructure.
-
-## 3) Updated Folder Structure
+## 3) Folder Structure
 
 ```text
 .
 ├── src/
-│   ├── lib/customSupabaseClient.js   # legacy compatibility client
-│   └── lib/backendClient.js          # app-facing backend client alias
+│   ├── lib/client.js              # backend API client
+│   ├── lib/backendClient.js       # app-facing backend client alias
+│   └── context/AuthContext.jsx    # auth context provider
 ├── server/
-│   ├── index.js                      # Express backend
-│   ├── lib/db.js                     # file-db utilities
-│   ├── data/db.json                  # persistent data store (auto-created)
-│   ├── uploads/                      # uploaded assets served by backend
-│   ├── migrations/001_init.sql       # SQL schema blueprint
+│   ├── index.js                   # Express backend
+│   ├── lib/db.js                  # file-db utilities
+│   ├── data/db.json               # persistent data store (auto-created)
+│   ├── uploads/                   # uploaded assets served by backend
+│   ├── migrations/001_init.sql    # SQL schema blueprint
 │   └── .env.example
 ├── .env.example
 └── package.json
 ```
 
-## 4) Migration Strategy Implemented
+## 4) Features
 
-- **Auth replacement**
-  - Supabase auth methods replaced with API-backed methods:
-    - `signUp`, `signInWithPassword`, `signOut`, `getSession`, `updateUser`, `signInWithOtp`, `resetPasswordForEmail`
-- **Database replacement**
-  - `supabase.from(...).select/insert/update/delete/upsert` now routed to `/api/query`
-  - Filtering supports `eq`, `neq`, `in`, `ilike`, `match`, `or`, ordering and single/maybeSingle
-- **Storage replacement**
-  - `supabase.storage.from(bucket).upload(...)` now uploads to backend and stores files under `server/uploads`
-  - public URLs served from `/uploads/...`
-- **RPC replacement**
-  - `vote_qa`, `vote_poll`, `get_user_emails`, `get_conversations` via `/api/rpc/:name`
-- **Function replacement**
-  - `generate-ticket`, `send-communication-email`, `update-user-by-admin` via `/api/functions/:name`
-- **Realtime replacement**
-  - Supabase channels replaced with local in-app channel bus compatible with existing hooks/components
+- **Auth**: `signUp`, `signInWithPassword`, `signOut`, `getSession`, `updateUser`, `signInWithOtp`, `resetPasswordForEmail`
+- **Database**: Query builder for `select/insert/update/delete/upsert` routed to `/api/query` with filtering (`eq`, `neq`, `in`, `ilike`, `match`, `or`), ordering, and single/maybeSingle
+- **Storage**: File uploads via `/api/storage/upload`, public URLs served from `/uploads/...`
+- **RPC**: `vote_qa`, `vote_poll`, `get_user_emails`, `get_conversations` via `/api/rpc/:name`
+- **Functions**: `generate-ticket`, `send-communication-email`, `update-user-by-admin` via `/api/functions/:name`
+- **Realtime**: Local in-app channel bus compatible with existing hooks/components
 
 ## 5) Environment Variables
 
@@ -89,7 +70,7 @@ JWT_SECRET=replace-with-a-long-random-secret
 API_ORIGIN=http://localhost:3000
 ```
 
-## 6) Setup, Build, Run, Migrate
+## 6) Setup, Build, Run
 
 ```bash
 npm install
@@ -144,15 +125,7 @@ Seed data:
 - [ ] Reverse proxy `/api` and `/uploads` to the backend port.
 - [ ] Enable HTTPS and firewall rules for production.
 
-## 8) Bugs Fixed List
-
-- [x] Removed all direct Supabase SDK usage from runtime client.
-- [x] Removed leaked hardcoded Supabase credentials.
-- [x] Added backend API for auth/database/storage/function/RPC flows.
-- [x] Added env templates for production-safe config.
-- [x] Removed hardcoded Stripe test key fallback.
-
-## 9) Final QA Checklist
+## 8) QA Checklist
 
 - [ ] User sign-up and login
 - [ ] Protected route redirects
@@ -164,7 +137,7 @@ Seed data:
 - [ ] Notifications and communications
 - [ ] Production deployment smoke test on target server
 
-## 10) Troubleshooting
+## 9) Troubleshooting
 
 - If frontend cannot call API, verify `VITE_API_BASE_URL`.
 - If auth fails after deployment, rotate and verify `JWT_SECRET`.

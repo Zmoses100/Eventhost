@@ -424,7 +424,7 @@ const admin = {
   },
 };
 
-export const supabase = {
+export const backendClient = {
   auth,
   from,
   storage,
@@ -435,6 +435,4 @@ export const supabase = {
   removeChannel,
 };
 
-export default supabase;
-export const customSupabaseClient = supabase;
-export const backendClient = supabase;
+export default backendClient;

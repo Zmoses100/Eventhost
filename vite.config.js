@@ -290,6 +290,16 @@ export default defineConfig({
 			'Cross-Origin-Embedder-Policy': 'credentialless',
 		},
 		allowedHosts: true,
+		proxy: {
+			'/api': {
+				target: process.env.VITE_API_BASE_URL || 'http://localhost:4000',
+				changeOrigin: true,
+			},
+			'/uploads': {
+				target: process.env.VITE_API_BASE_URL || 'http://localhost:4000',
+				changeOrigin: true,
+			},
+		},
 	},
 	resolve: {
 		extensions: ['.jsx', '.js', '.tsx', '.ts', '.json', ],

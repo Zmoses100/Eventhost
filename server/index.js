@@ -1193,6 +1193,11 @@ app.get('/api/storage/public-url', (req, res) => {
   res.json({ data: { publicUrl: `/uploads/${bucket}/${relativePath}` }, error: null });
 });
 
+// Ensure every /api route returns JSON, even when no handler matches.
+app.use('/api', (req, res) => {
+  res.status(404).json({ data: null, error: { message: `Endpoint ${req.method} ${req.originalUrl} not found.` } });
+});
+
 app.use((error, _req, res, _next) => {
   console.error(error);
   res.status(500).json({ error: { message: 'Internal server error.' } });
